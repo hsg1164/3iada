@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useGetPatientStats, useGetAppointmentStats, useGetClinicalStats } from "@workspace/api-client-react";
+import { useGetPatientsAnalytics, useGetAppointmentsAnalytics, useGetClinicalAnalytics } from "@workspace/api-client-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,9 +31,9 @@ const fadeUp = { hidden: { opacity: 0, y: 15 }, visible: { opacity: 1, y: 0, tra
 export default function Analytics() {
   const [period, setPeriod] = useState("month");
   
-  const { data: patientStats, isLoading: patientsLoading } = useGetPatientStats({ period });
-  const { data: apptStats, isLoading: apptsLoading } = useGetAppointmentStats({ period });
-  const { data: clinicalStats, isLoading: clinicalLoading } = useGetClinicalStats({ period });
+  const { data: patientStats, isLoading: patientsLoading } = useGetPatientsAnalytics({ period });
+  const { data: apptStats, isLoading: apptsLoading } = useGetAppointmentsAnalytics({ period });
+  const { data: clinicalStats, isLoading: clinicalLoading } = useGetClinicalAnalytics({ period });
 
   const genderData = patientStats?.genderStats ? [
     { name: 'ذكور', value: patientStats.genderStats.male || 0 },
