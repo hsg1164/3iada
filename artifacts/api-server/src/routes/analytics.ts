@@ -1,11 +1,11 @@
 import { Router } from "express";
-import { supabase } from "../lib/supabase";
+import { tenantSupabase } from "../lib/tenant-supabase";
 
 const router = Router();
 
 router.get("/analytics/patients", async (req, res) => {
   try {
-    const { data: patients, error } = await supabase.from("patients").select("date_of_birth, gender, nationality, governorate").eq("is_deleted", false);
+    const { data: patients, error } = await tenantSupabase(req).from("patients").select("date_of_birth, gender, nationality, governorate").eq("is_deleted", false);
     if (error) throw error;
 
     const total = (patients ?? []).length;
@@ -45,7 +45,7 @@ router.get("/analytics/patients", async (req, res) => {
 
 router.get("/analytics/appointments", async (req, res) => {
   try {
-    const { data: rows, error } = await supabase.from("appointments").select("status");
+    const { data: rows, error } = await tenantSupabase(req).from("appointments").select("status");
     if (error) throw error;
     const statusMap: Record<string, number> = {};
     for (const r of rows ?? []) statusMap[r.status] = (statusMap[r.status] ?? 0) + 1;
@@ -63,7 +63,7 @@ router.get("/analytics/appointments", async (req, res) => {
 
 router.get("/analytics/clinical", async (req, res) => {
   try {
-    const { data: visits, error } = await supabase.from("visits").select("diagnosis").not("diagnosis", "is", null);
+    const { data: visits, error } = await tenantSupabase(req).from("visits").select("diagnosis").not("diagnosis", "is", null);
     if (error) throw error;
     const diagMap: Record<string, number> = {};
     for (const v of visits ?? []) {

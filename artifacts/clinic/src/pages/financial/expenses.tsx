@@ -6,25 +6,24 @@ import {
   useListVaults
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { motion } from "framer-motion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, TrendingDown, Filter, FileText, Tag, RepeatIcon, Edit, Trash2 } from "lucide-react";
+import { Plus, TrendingDown, Filter, FileText, Tag, RepeatIcon, Edit, Trash2, Activity, CalendarIcon } from "lucide-react";
 
+/* ─── Schemas ─── */
 const expenseSchema = z.object({
   categoryId: z.coerce.number().min(1, "اختر الفئة"),
   amount: z.coerce.number().min(0.01, "المبلغ يجب أن يكون أكبر من صفر"),
@@ -49,11 +48,17 @@ const routineSchema = z.object({
 
 const frequencyLabel = { daily: "يومي", weekly: "أسبوعي", monthly: "شهري" };
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 15 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+};
+
 export default function Expenses() {
   const [dateFrom, setDateFrom] = useState<string>("");
   const [dateTo, setDateTo] = useState<string>("");
   const [categoryIdFilter, setCategoryIdFilter] = useState<string>("all");
   const [appliedFilters, setAppliedFilters] = useState({ dateFrom: "", dateTo: "", categoryId: "" });
+  
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCatDialogOpen, setIsCatDialogOpen] = useState(false);
   const [editingCatId, setEditingCatId] = useState<number | null>(null);
@@ -72,12 +77,10 @@ export default function Expenses() {
   const { data: vaults } = useListVaults();
   const { data: routineExpenses, isLoading: routineLoading } = useListRoutineExpenses();
 
-  // ── forms declared first so mutations can safely reference them in callbacks ──
   const expForm = useForm<z.infer<typeof expenseSchema>>({ resolver: zodResolver(expenseSchema), defaultValues: { amount: 0, note: "" } });
   const catForm = useForm<z.infer<typeof categorySchema>>({ resolver: zodResolver(categorySchema), defaultValues: { name: "", description: "" } });
   const routineForm = useForm<z.infer<typeof routineSchema>>({ resolver: zodResolver(routineSchema), defaultValues: { frequency: "monthly", isActive: true, amount: 0 } });
 
-  // ── expense mutations ──
   const createExpense = useCreateExpense({
     mutation: {
       onSuccess: () => { toast({ title: "تم الإضافة", description: "تم تسجيل المصروف بنجاح" }); queryClient.invalidateQueries(); setIsDialogOpen(false); expForm.reset(); },
@@ -85,7 +88,6 @@ export default function Expenses() {
     }
   });
 
-  // ── category mutations ──
   const createCat = useCreateExpenseCategory({ mutation: { onSuccess: () => { toast({ title: "تم الإضافة" }); queryClient.invalidateQueries(); setIsCatDialogOpen(false); catForm.reset(); } } });
   const updateCat = useUpdateExpenseCategory({ mutation: { onSuccess: () => { toast({ title: "تم التعديل" }); queryClient.invalidateQueries(); setIsCatDialogOpen(false); setEditingCatId(null); catForm.reset(); } } });
   const deleteCat = useDeleteExpenseCategory({ mutation: { onSuccess: () => { toast({ title: "تم الحذف" }); queryClient.invalidateQueries(); } } });
@@ -102,7 +104,6 @@ export default function Expenses() {
     else createCat.mutate({ data });
   };
 
-  // ── routine mutations ──
   const createRoutine = useCreateRoutineExpense({ mutation: { onSuccess: () => { toast({ title: "تم الإضافة" }); queryClient.invalidateQueries(); setIsRoutineDialogOpen(false); routineForm.reset(); } } });
   const updateRoutine = useUpdateRoutineExpense({ mutation: { onSuccess: () => { toast({ title: "تم التعديل" }); queryClient.invalidateQueries(); setIsRoutineDialogOpen(false); setEditingRoutineId(null); routineForm.reset(); } } });
   const deleteRoutine = useDeleteRoutineExpense({ mutation: { onSuccess: () => { toast({ title: "تم الحذف" }); queryClient.invalidateQueries(); } } });
@@ -123,345 +124,390 @@ export default function Expenses() {
   const totalAmount = Array.isArray(expensesList) ? expensesList.reduce((sum, exp) => sum + exp.amount, 0) : 0;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">المصروفات</h1>
-      </div>
+    <div className="min-h-full" dir="rtl">
+      <motion.div initial="hidden" animate="visible" variants={fadeUp} className="space-y-6">
+        
+        {/* ─── Header ─── */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-[28px] font-extrabold text-[#FF4D60] tracking-tight" style={{ fontFamily: '"Thmanyah Sans", sans-serif' }}>
+              إدارة المصروفات
+            </h1>
+            <p className="text-[13px] mt-2 font-medium" style={{ color: "#8EA2BD" }}>
+              سجل النفقات، المصروفات الدورية، وتصنيفات الصرف من الخزنة.
+            </p>
+          </div>
+        </div>
 
-      <Tabs defaultValue="log" className="w-full">
-        <TabsList className="mb-6 grid grid-cols-3 max-w-xl">
-          <TabsTrigger value="log" className="gap-2"><FileText className="h-4 w-4" /> سجل المصروفات</TabsTrigger>
-          <TabsTrigger value="routine" className="gap-2"><RepeatIcon className="h-4 w-4" /> المصروفات الروتينية</TabsTrigger>
-          <TabsTrigger value="categories" className="gap-2"><Tag className="h-4 w-4" /> أقسام المصروفات</TabsTrigger>
-        </TabsList>
+        <Tabs defaultValue="log" className="w-full">
+          <TabsList className="mb-6 grid grid-cols-3 max-w-xl bg-[#050C1F] border border-[rgba(40,130,220,0.16)] rounded-[10px] h-[48px] p-1">
+            <TabsTrigger value="log" className="text-[12px] font-bold rounded-[8px] data-[state=active]:bg-[rgba(10,108,255,0.1)] data-[state=active]:text-[#0A6CFF] text-[#8EA2BD] transition-all"><FileText className="h-4 w-4 ml-2" /> سجل المصروفات</TabsTrigger>
+            <TabsTrigger value="routine" className="text-[12px] font-bold rounded-[8px] data-[state=active]:bg-[rgba(10,108,255,0.1)] data-[state=active]:text-[#0A6CFF] text-[#8EA2BD] transition-all"><RepeatIcon className="h-4 w-4 ml-2" /> المصروفات الدورية</TabsTrigger>
+            <TabsTrigger value="categories" className="text-[12px] font-bold rounded-[8px] data-[state=active]:bg-[rgba(10,108,255,0.1)] data-[state=active]:text-[#0A6CFF] text-[#8EA2BD] transition-all"><Tag className="h-4 w-4 ml-2" /> أقسام الصرف</TabsTrigger>
+          </TabsList>
 
-        {/* ─── TAB 1: Expense Log ─── */}
-        <TabsContent value="log">
-          <div className="flex justify-end mb-4">
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="gap-2 bg-rose-600 hover:bg-rose-700"><Plus className="h-4 w-4" /> إضافة مصروف</Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader><DialogTitle>تسجيل مصروف جديد</DialogTitle></DialogHeader>
-                <Form {...expForm}>
-                  <form onSubmit={expForm.handleSubmit(data => createExpense.mutate({ data }))} className="space-y-4 mt-2">
-                    <FormField control={expForm.control} name="categoryId" render={({ field }) => (
-                      <FormItem><FormLabel>فئة المصروف</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value?.toString()}>
-                          <FormControl><SelectTrigger><SelectValue placeholder="اختر الفئة..." /></SelectTrigger></FormControl>
-                          <SelectContent>{Array.isArray(categories) && categories.map(c => <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>)}</SelectContent>
-                        </Select><FormMessage /></FormItem>
-                    )} />
-                    <FormField control={expForm.control} name="amount" render={({ field }) => (
-                      <FormItem><FormLabel>المبلغ (₪)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    <FormField control={expForm.control} name="vaultId" render={({ field }) => (
-                      <FormItem><FormLabel>سحب من خزنة</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value?.toString()}>
-                          <FormControl><SelectTrigger><SelectValue placeholder="اختر الخزنة..." /></SelectTrigger></FormControl>
-                          <SelectContent>{vaults?.filter(v => !v.isLocked).map(v => <SelectItem key={v.id} value={v.id.toString()}>{v.name} (رصيد: {v.balance})</SelectItem>)}</SelectContent>
-                        </Select><FormMessage /></FormItem>
-                    )} />
-                    <FormField control={expForm.control} name="note" render={({ field }) => (
-                      <FormItem><FormLabel>ملاحظات / البيان</FormLabel><FormControl><Textarea className="resize-none" {...field} /></FormControl></FormItem>
-                    )} />
-                    <div className="flex justify-end pt-4 gap-2">
-                      <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>إلغاء</Button>
-                      <Button type="submit" disabled={createExpense.isPending} className="bg-rose-600 hover:bg-rose-700">حفظ المصروف</Button>
+          {/* ─── TAB 1: Expense Log ─── */}
+          <TabsContent value="log">
+            <div className="flex justify-end mb-4">
+              <button
+                onClick={() => setIsDialogOpen(true)}
+                className="flex items-center gap-2 h-[40px] px-6 rounded-[10px] text-[12px] font-bold text-white transition-all hover:scale-[1.02] border-0"
+                style={{
+                  background: "linear-gradient(135deg, #FF4D60, #FFC857)",
+                  boxShadow: "0 4px 15px rgba(255,77,96,0.25)",
+                }}
+              >
+                <Plus className="h-4 w-4" /> إضافة مصروف جديد
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="md:col-span-1 space-y-6">
+                
+                {/* Total Expense Card */}
+                <div 
+                  className="rounded-[14px] p-6 border relative overflow-hidden"
+                  style={{
+                    background: "linear-gradient(145deg, rgba(255,77,96,0.1), rgba(255,77,96,0.02))",
+                    borderColor: "rgba(255,77,96,0.2)"
+                  }}
+                >
+                  <div className="absolute -left-6 -top-6 w-24 h-24 bg-[#FF4D60] rounded-full blur-[50px] opacity-20 pointer-events-none" />
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="bg-[#FF4D60] rounded-full p-2 text-white shadow-[0_0_15px_rgba(255,77,96,0.3)]">
+                      <TrendingDown className="h-5 w-5" />
                     </div>
-                  </form>
-                </Form>
-              </DialogContent>
-            </Dialog>
-          </div>
+                    <h3 className="font-bold text-[#FF4D60] text-[14px]">إجمالي المصروفات</h3>
+                  </div>
+                  <div className="text-[32px] font-extrabold font-mono tracking-tight text-white mt-2 flex items-center justify-end" dir="ltr">
+                    <span className="text-[#FF4D60] text-[20px] mr-2">₪</span>
+                    {totalAmount.toLocaleString()}
+                  </div>
+                  <p className="text-[#8EA2BD] text-[11px] mt-2 text-left">حسب التصفيات المحددة</p>
+                </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="md:col-span-1 space-y-6">
-              <Card className="bg-rose-50 border-rose-200">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="p-2 bg-rose-100 rounded-md"><TrendingDown className="h-5 w-5 text-rose-600" /></div>
-                    <h3 className="font-semibold text-rose-900">إجمالي المصروفات</h3>
+                {/* Filter */}
+                <div 
+                  className="rounded-[14px] p-6 border"
+                  style={{
+                    background: "#050C1F",
+                    borderColor: "rgba(40,130,220,0.16)"
+                  }}
+                >
+                  <h3 className="font-bold text-white text-[14px] mb-4 flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-[#0A6CFF]" /> تصفية النتائج
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-[#8EA2BD]">الفئة</label>
+                      <Select value={categoryIdFilter} onValueChange={setCategoryIdFilter}>
+                        <SelectTrigger className="bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] h-[40px]">
+                          <SelectValue placeholder="الكل" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#061329] border-[rgba(40,130,220,0.16)] text-white">
+                          <SelectItem value="all" className="text-[12px]">جميع الفئات</SelectItem>
+                          {Array.isArray(categories) && categories.map(c => <SelectItem key={c.id} value={c.id.toString()} className="text-[12px]">{c.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-[#8EA2BD]">من تاريخ</label>
+                      <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] h-[40px]" style={{ colorScheme: "dark" }} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-[#8EA2BD]">إلى تاريخ</label>
+                      <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] h-[40px]" style={{ colorScheme: "dark" }} />
+                    </div>
+                    
+                    <button
+                      onClick={handleFilter}
+                      className="w-full h-[40px] rounded-[10px] text-[12px] font-bold text-white transition-all hover:scale-[1.02] border-0 mt-2"
+                      style={{
+                        background: "linear-gradient(135deg, #0A6CFF, #00D8D8)",
+                        boxShadow: "0 4px 15px rgba(10,108,255,0.25)",
+                      }}
+                    >
+                      تطبيق الفلتر
+                    </button>
                   </div>
-                  <div className="text-3xl font-bold font-mono tracking-tight text-rose-700 mt-4" dir="ltr">₪ {totalAmount.toLocaleString()}</div>
-                  <p className="text-xs text-rose-600/80 mt-2">حسب التصفيات المحددة</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2"><Filter className="h-4 w-4" /> تصفية</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">الفئة</label>
-                    <Select value={categoryIdFilter} onValueChange={setCategoryIdFilter}>
-                      <SelectTrigger><SelectValue placeholder="الكل" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">جميع الفئات</SelectItem>
-                        {Array.isArray(categories) && categories.map(c => <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">من تاريخ</label>
-                    <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">إلى تاريخ</label>
-                    <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} />
-                  </div>
-                  <Button className="w-full" onClick={handleFilter}>تطبيق الفلتر</Button>
-                </CardContent>
-              </Card>
-            </div>
-            <div className="md:col-span-3">
-              <Card className="h-full">
-                <CardContent className="p-0">
-                  <Table>
-                    <TableHeader className="bg-secondary/30">
-                      <TableRow>
-                        <TableHead className="w-[100px]">التاريخ</TableHead>
-                        <TableHead>الفئة</TableHead>
-                        <TableHead>البيان / الملاحظات</TableHead>
-                        <TableHead>المبلغ</TableHead>
-                        <TableHead>الخزنة</TableHead>
-                        <TableHead>بواسطة</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {isLoading ? Array.from({ length: 5 }).map((_, i) => (
-                        <TableRow key={i}>
-                          {[20, 24, 48, 16, 20, 16].map((w, j) => <TableCell key={j}><Skeleton className={`h-4 w-${w}`} /></TableCell>)}
-                        </TableRow>
-                      )) : !Array.isArray(expensesList) || expensesList.length === 0 ? (
-                        <TableRow><TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
-                          <FileText className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />لا يوجد مصروفات مسجلة
-                        </TableCell></TableRow>
-                      ) : expensesList.map(exp => (
-                        <TableRow key={exp.id}>
-                          <TableCell className="text-sm">{new Date(exp.createdAt).toLocaleDateString('ar-EG')}</TableCell>
-                          <TableCell><Badge variant="secondary">{exp.categoryName}</Badge></TableCell>
-                          <TableCell className="max-w-[200px] truncate" title={exp.note || ''}>{exp.note || '-'}</TableCell>
-                          <TableCell className="font-bold text-rose-600 font-mono" dir="ltr">₪ {exp.amount}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">{exp.vaultName}</TableCell>
-                          <TableCell className="text-sm">{exp.performedBy || '-'}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* ─── TAB 2: Routine Expenses ─── */}
-        <TabsContent value="routine">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <div>
-                <CardTitle>المصروفات الروتينية</CardTitle>
-                <CardDescription>المصروفات الثابتة والمتكررة للعيادة (إيجار، رواتب، فواتير...)</CardDescription>
+                </div>
               </div>
-              <Dialog open={isRoutineDialogOpen} onOpenChange={open => { setIsRoutineDialogOpen(open); if (!open) { setEditingRoutineId(null); routineForm.reset({ frequency: "monthly", isActive: true, amount: 0 }); } }}>
-                <DialogTrigger asChild>
-                  <Button size="sm" className="gap-1"><Plus className="h-3.5 w-3.5" /> إضافة مصروف روتيني</Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader><DialogTitle>{editingRoutineId ? "تعديل المصروف الروتيني" : "إضافة مصروف روتيني"}</DialogTitle></DialogHeader>
-                  <Form {...routineForm}>
-                    <form onSubmit={routineForm.handleSubmit(onRoutineSubmit)} className="space-y-4 pt-2">
-                      <FormField control={routineForm.control} name="title" render={({ field }) => (
-                        <FormItem><FormLabel>العنوان *</FormLabel><FormControl><Input placeholder="مثال: إيجار العيادة" {...field} /></FormControl><FormMessage /></FormItem>
-                      )} />
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField control={routineForm.control} name="categoryId" render={({ field }) => (
-                          <FormItem><FormLabel>الفئة</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value?.toString()}>
-                              <FormControl><SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger></FormControl>
-                              <SelectContent>{Array.isArray(categories) && categories.map(c => <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>)}</SelectContent>
-                            </Select><FormMessage /></FormItem>
-                        )} />
-                        <FormField control={routineForm.control} name="frequency" render={({ field }) => (
-                          <FormItem><FormLabel>التكرار</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                              <SelectContent>
-                                <SelectItem value="daily">يومي</SelectItem>
-                                <SelectItem value="weekly">أسبوعي</SelectItem>
-                                <SelectItem value="monthly">شهري</SelectItem>
-                              </SelectContent>
-                            </Select></FormItem>
-                        )} />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField control={routineForm.control} name="amount" render={({ field }) => (
-                          <FormItem><FormLabel>المبلغ (₪)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
-                        )} />
-                        <FormField control={routineForm.control} name="branch" render={({ field }) => (
-                          <FormItem><FormLabel>الفرع</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value || "__all__"}>
-                              <FormControl><SelectTrigger><SelectValue placeholder="الكل" /></SelectTrigger></FormControl>
-                              <SelectContent>
-                                <SelectItem value="__all__">جميع الفروع</SelectItem>
-                                <SelectItem value="فرع غزة">فرع غزة</SelectItem>
-                                <SelectItem value="فرع خان يونس">فرع خان يونس</SelectItem>
-                              </SelectContent>
-                            </Select></FormItem>
-                        )} />
-                      </div>
-                      <FormField control={routineForm.control} name="note" render={({ field }) => (
-                        <FormItem><FormLabel>ملاحظات</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-                      )} />
-                      <FormField control={routineForm.control} name="isActive" render={({ field }) => (
-                        <FormItem className="flex items-center gap-3 pt-2">
-                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                          <FormLabel className="!mt-0">نشط</FormLabel>
-                        </FormItem>
-                      )} />
-                      <div className="flex justify-end pt-4 gap-2">
-                        <Button type="button" variant="outline" onClick={() => setIsRoutineDialogOpen(false)}>إلغاء</Button>
-                        <Button type="submit" disabled={createRoutine.isPending || updateRoutine.isPending}>{editingRoutineId ? "حفظ التعديل" : "إضافة"}</Button>
-                      </div>
-                    </form>
-                  </Form>
-                </DialogContent>
-              </Dialog>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader className="bg-secondary/20">
-                  <TableRow>
-                    <TableHead>العنوان</TableHead>
-                    <TableHead>الفئة</TableHead>
-                    <TableHead>المبلغ</TableHead>
-                    <TableHead>التكرار</TableHead>
-                    <TableHead>الفرع</TableHead>
-                    <TableHead>الحالة</TableHead>
-                    <TableHead className="w-[80px]">أدوات</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {routineLoading ? (
-                    <TableRow><TableCell colSpan={7}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
-                  ) : !Array.isArray(routineExpenses) || routineExpenses.length === 0 ? (
-                    <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      <RepeatIcon className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />لا يوجد مصروفات روتينية مضافة
-                    </TableCell></TableRow>
-                  ) : routineExpenses.map(r => (
-                    <TableRow key={r.id}>
-                      <TableCell className="font-medium">{r.title}</TableCell>
-                      <TableCell><Badge variant="outline">{r.categoryName || '-'}</Badge></TableCell>
-                      <TableCell className="font-bold text-rose-600 font-mono" dir="ltr">₪ {r.amount}</TableCell>
-                      <TableCell>{frequencyLabel[r.frequency as keyof typeof frequencyLabel] || r.frequency}</TableCell>
-                      <TableCell className="text-sm">{r.branch || 'الكل'}</TableCell>
-                      <TableCell>
-                        <Badge variant={r.isActive ? "default" : "secondary"} className={r.isActive ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100" : ""}>
-                          {r.isActive ? "نشط" : "موقوف"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditRoutine(r)}><Edit className="h-3.5 w-3.5" /></Button>
+
+              {/* Table */}
+              <div className="md:col-span-3">
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-20 text-[#FF4D60]">
+                    <Activity className="w-8 h-8 animate-spin" />
+                  </div>
+                ) : (
+                  <div
+                    className="rounded-[14px] overflow-hidden h-full"
+                    style={{ background: "#050C1F", border: "1px solid rgba(40,130,220,0.16)" }}
+                  >
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-right border-collapse">
+                        <thead>
+                          <tr style={{ background: "rgba(10,108,255,0.04)", borderBottom: "1px solid rgba(40,130,220,0.16)" }}>
+                            <th className="px-5 py-4 text-[11px] font-bold text-[#8EA2BD]">رقم الإيصال</th>
+                            <th className="px-5 py-4 text-[11px] font-bold text-[#8EA2BD]">التاريخ</th>
+                            <th className="px-5 py-4 text-[11px] font-bold text-[#8EA2BD]">الفئة</th>
+                            <th className="px-5 py-4 text-[11px] font-bold text-[#8EA2BD]">الخزنة</th>
+                            <th className="px-5 py-4 text-[11px] font-bold text-[#8EA2BD]">البيان</th>
+                            <th className="px-5 py-4 text-[11px] font-bold text-[#8EA2BD]">المبلغ</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y" style={{ borderColor: "rgba(40,130,220,0.08)" }}>
+                          {!Array.isArray(expensesList) || expensesList.length === 0 ? (
+                            <tr><td colSpan={6} className="text-center py-12 text-[#8EA2BD] text-[13px]">لا توجد مصروفات مسجلة</td></tr>
+                          ) : (
+                            expensesList.map((exp: any) => (
+                              <tr key={exp.id} className="transition-colors hover:bg-[rgba(255,77,96,0.03)]">
+                                <td className="px-5 py-4 font-mono text-[11px] text-[#FFC857]">{exp.receiptNumber}</td>
+                                <td className="px-5 py-4">
+                                  <div className="flex items-center gap-2 text-[12px] text-[#8EA2BD]" dir="ltr">
+                                    <CalendarIcon className="w-3.5 h-3.5" />
+                                    {new Date(exp.expenseDate).toLocaleDateString('ar-EG')}
+                                  </div>
+                                </td>
+                                <td className="px-5 py-4 text-[12px] text-white">
+                                  <span className="bg-[rgba(10,108,255,0.1)] text-[#0A6CFF] px-2 py-0.5 rounded-[4px] border border-[rgba(10,108,255,0.2)] text-[10px]">
+                                    {exp.categoryName || "غير محدد"}
+                                  </span>
+                                </td>
+                                <td className="px-5 py-4 text-[12px] text-[#8EA2BD]">{exp.vaultName || "-"}</td>
+                                <td className="px-5 py-4 text-[12px] text-white max-w-[200px] truncate" title={exp.note || "-"}>{exp.note || "-"}</td>
+                                <td className="px-5 py-4">
+                                  <span className="font-extrabold text-[14px] font-mono text-[#FF4D60]" dir="ltr">
+                                    ₪ {exp.amount}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* ─── TAB 2: Routine Expenses ─── */}
+          <TabsContent value="routine">
+            <div className="flex justify-end mb-4">
+              <button onClick={() => { setEditingRoutineId(null); routineForm.reset(); setIsRoutineDialogOpen(true); }} className="flex items-center gap-2 h-[40px] px-6 rounded-[10px] text-[12px] font-bold text-white transition-all hover:scale-[1.02] border-0" style={{ background: "linear-gradient(135deg, #0A6CFF, #00D8D8)", boxShadow: "0 4px 15px rgba(10,108,255,0.25)" }}>
+                <Plus className="h-4 w-4" /> إضافة التزام دوري
+              </button>
+            </div>
+            {routineLoading ? (
+               <div className="flex items-center justify-center py-20 text-[#00D8D8]"><Activity className="w-8 h-8 animate-spin" /></div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {!Array.isArray(routineExpenses) || routineExpenses.length === 0 ? (
+                  <div className="col-span-3 text-center py-12 text-[#8EA2BD] text-[13px] bg-[#050C1F] border border-[rgba(40,130,220,0.16)] rounded-[14px]">لا توجد التزامات دورية مسجلة</div>
+                ) : (
+                  routineExpenses.map((r: any) => (
+                    <div key={r.id} className="rounded-[14px] p-5 flex flex-col relative overflow-hidden group border transition-colors" style={{ background: "#050C1F", borderColor: r.isActive ? "rgba(0,217,208,0.3)" : "rgba(142,162,189,0.2)" }}>
+                      <div className="absolute top-0 right-0 left-0 h-1" style={{ background: r.isActive ? "#00D8D8" : "#8EA2BD" }} />
+                      <div className="flex justify-between items-start mt-2">
+                        <div>
+                          <h3 className="font-bold text-[15px] text-white">{r.title}</h3>
+                          <span className="bg-[rgba(10,108,255,0.1)] text-[#0A6CFF] px-2 py-0.5 rounded-[4px] border border-[rgba(10,108,255,0.2)] text-[10px] mt-1 inline-block">{r.categoryName || "-"}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => openEditRoutine(r)} className="h-7 w-7 rounded-md flex items-center justify-center transition-colors text-[#8EA2BD] hover:bg-[rgba(10,108,255,0.1)] hover:text-[#0A6CFF]"><Edit className="h-3.5 w-3.5" /></button>
                           <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader><AlertDialogTitle>حذف المصروف الروتيني</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد من الحذف؟</AlertDialogDescription></AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => deleteRoutine.mutate({ id: r.id })} className="bg-destructive">حذف</AlertDialogAction>
-                              </AlertDialogFooter>
+                            <AlertDialogTrigger asChild><button className="h-7 w-7 rounded-md flex items-center justify-center transition-colors text-[#8EA2BD] hover:bg-[rgba(255,77,96,0.1)] hover:text-[#FF4D60]"><Trash2 className="h-3.5 w-3.5" /></button></AlertDialogTrigger>
+                            <AlertDialogContent className="sm:max-w-[400px] border-[rgba(255,77,96,0.3)] bg-[#050C1F] p-0 overflow-hidden shadow-[0_0_40px_rgba(255,77,96,0.15)]">
+                              <div className="bg-[rgba(255,77,96,0.1)] border-b border-[rgba(255,77,96,0.2)] px-6 py-4"><AlertDialogTitle className="text-white font-extrabold text-[15px]">حذف الالتزام</AlertDialogTitle></div>
+                              <div className="p-6">
+                                <AlertDialogDescription className="text-[#8EA2BD] text-[13px] mb-6">هل أنت متأكد من حذف الالتزام ({r.title})؟</AlertDialogDescription>
+                                <div className="flex justify-end gap-3"><AlertDialogCancel className="bg-transparent text-[#8EA2BD] border-0 hover:text-white h-[38px] px-5">إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => deleteRoutine.mutate({ id: r.id })} className="bg-[#FF4D60] text-white h-[38px] px-6 font-bold border-0">نعم، احذف</AlertDialogAction></div>
+                              </div>
                             </AlertDialogContent>
                           </AlertDialog>
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* ─── TAB 3: Expense Categories ─── */}
-        <TabsContent value="categories">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <div>
-                <CardTitle>أقسام المصروفات</CardTitle>
-                <CardDescription>إدارة فئات وتصنيفات المصروفات</CardDescription>
-              </div>
-              <Dialog open={isCatDialogOpen} onOpenChange={open => { setIsCatDialogOpen(open); if (!open) { setEditingCatId(null); catForm.reset(); } }}>
-                <DialogTrigger asChild>
-                  <Button size="sm" className="gap-1"><Plus className="h-3.5 w-3.5" /> إضافة قسم</Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader><DialogTitle>{editingCatId ? "تعديل القسم" : "إضافة قسم جديد"}</DialogTitle></DialogHeader>
-                  <Form {...catForm}>
-                    <form onSubmit={catForm.handleSubmit(onCatSubmit)} className="space-y-4 pt-2">
-                      <FormField control={catForm.control} name="name" render={({ field }) => (
-                        <FormItem><FormLabel>اسم القسم *</FormLabel><FormControl><Input placeholder="مثال: رواتب الموظفين" {...field} /></FormControl><FormMessage /></FormItem>
-                      )} />
-                      <FormField control={catForm.control} name="description" render={({ field }) => (
-                        <FormItem><FormLabel>الوصف</FormLabel><FormControl><Input placeholder="وصف اختياري للقسم" {...field} /></FormControl></FormItem>
-                      )} />
-                      <div className="flex justify-end pt-4 gap-2">
-                        <Button type="button" variant="outline" onClick={() => setIsCatDialogOpen(false)}>إلغاء</Button>
-                        <Button type="submit" disabled={createCat.isPending || updateCat.isPending}>{editingCatId ? "حفظ التعديل" : "إضافة القسم"}</Button>
                       </div>
-                    </form>
-                  </Form>
-                </DialogContent>
-              </Dialog>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader className="bg-secondary/20">
-                  <TableRow>
-                    <TableHead>#</TableHead>
-                    <TableHead>اسم القسم</TableHead>
-                    <TableHead>الوصف</TableHead>
-                    <TableHead className="w-[80px]">أدوات</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {catsLoading ? (
-                    <TableRow><TableCell colSpan={4}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
-                  ) : !Array.isArray(categories) || categories.length === 0 ? (
-                    <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                      <Tag className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />لا يوجد أقسام مضافة
-                    </TableCell></TableRow>
-                  ) : categories.map((cat, i) => (
-                    <TableRow key={cat.id}>
-                      <TableCell className="text-muted-foreground text-sm">{i + 1}</TableCell>
-                      <TableCell className="font-medium">{cat.name}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{cat.description || '-'}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditCat(cat)}><Edit className="h-3.5 w-3.5" /></Button>
+                      <div className="my-4 pt-4 border-t border-[rgba(40,130,220,0.16)] flex flex-col gap-2">
+                        <div className="flex justify-between items-center text-[12px]">
+                          <span className="text-[#8EA2BD]">المبلغ المطلوب:</span>
+                          <span className="font-bold text-[#FFC857] font-mono" dir="ltr">₪ {r.amount}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-[12px]">
+                          <span className="text-[#8EA2BD]">التكرار:</span>
+                          <span className="text-white">{frequencyLabel[r.frequency as keyof typeof frequencyLabel]}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* ─── TAB 3: Categories ─── */}
+          <TabsContent value="categories">
+            <div className="flex justify-end mb-4">
+              <button onClick={() => { setEditingCatId(null); catForm.reset(); setIsCatDialogOpen(true); }} className="flex items-center gap-2 h-[40px] px-6 rounded-[10px] text-[12px] font-bold text-white transition-all hover:scale-[1.02] border-0" style={{ background: "linear-gradient(135deg, #8B5CF6, #0A6CFF)", boxShadow: "0 4px 15px rgba(139,92,246,0.25)" }}>
+                <Plus className="h-4 w-4" /> إضافة فئة جديدة
+              </button>
+            </div>
+            {catsLoading ? (
+              <div className="flex items-center justify-center py-20 text-[#8B5CF6]"><Activity className="w-8 h-8 animate-spin" /></div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {!Array.isArray(categories) || categories.length === 0 ? (
+                  <div className="col-span-4 text-center py-12 text-[#8EA2BD] text-[13px] bg-[#050C1F] border border-[rgba(40,130,220,0.16)] rounded-[14px]">لا توجد فئات مسجلة</div>
+                ) : (
+                  categories.map((c: any) => (
+                    <div key={c.id} className="rounded-[14px] p-5 flex flex-col border border-[rgba(40,130,220,0.16)] bg-[#050C1F]">
+                      <div className="flex justify-between items-start mb-3">
+                        <h3 className="font-bold text-[14px] text-white flex items-center gap-2"><Tag className="w-3.5 h-3.5 text-[#8B5CF6]" /> {c.name}</h3>
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => openEditCat(c)} className="h-6 w-6 rounded flex items-center justify-center text-[#8EA2BD] hover:bg-[rgba(10,108,255,0.1)] hover:text-[#0A6CFF]"><Edit className="w-3 h-3" /></button>
                           <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader><AlertDialogTitle>حذف قسم المصروفات</AlertDialogTitle><AlertDialogDescription>سيتم حذف القسم "{cat.name}" نهائياً.</AlertDialogDescription></AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => deleteCat.mutate({ id: cat.id })} className="bg-destructive">حذف</AlertDialogAction>
-                              </AlertDialogFooter>
+                            <AlertDialogTrigger asChild><button className="h-6 w-6 rounded flex items-center justify-center text-[#8EA2BD] hover:bg-[rgba(255,77,96,0.1)] hover:text-[#FF4D60]"><Trash2 className="w-3 h-3" /></button></AlertDialogTrigger>
+                            <AlertDialogContent className="sm:max-w-[400px] border-[rgba(255,77,96,0.3)] bg-[#050C1F] p-0 overflow-hidden shadow-[0_0_40px_rgba(255,77,96,0.15)]">
+                              <div className="bg-[rgba(255,77,96,0.1)] border-b border-[rgba(255,77,96,0.2)] px-6 py-4"><AlertDialogTitle className="text-white font-extrabold text-[15px]">حذف الفئة</AlertDialogTitle></div>
+                              <div className="p-6">
+                                <AlertDialogDescription className="text-[#8EA2BD] text-[13px] mb-6">هل أنت متأكد من حذف هذه الفئة؟ لا يمكن التراجع.</AlertDialogDescription>
+                                <div className="flex justify-end gap-3"><AlertDialogCancel className="bg-transparent text-[#8EA2BD] border-0 hover:text-white h-[38px] px-5">إلغاء</AlertDialogCancel><AlertDialogAction onClick={() => deleteCat.mutate({ id: c.id })} className="bg-[#FF4D60] text-white h-[38px] px-6 font-bold border-0">نعم، احذف</AlertDialogAction></div>
+                              </div>
                             </AlertDialogContent>
                           </AlertDialog>
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                      </div>
+                      <p className="text-[11px] text-[#8EA2BD] leading-relaxed">{c.description || "لا يوجد وصف"}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+
+        {/* ─── Expense Dialog ─── */}
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="sm:max-w-[400px] border-[rgba(255,77,96,0.3)] bg-[#050C1F] p-0 overflow-hidden shadow-[0_0_40px_rgba(255,77,96,0.15)]">
+            <div className="bg-gradient-to-l from-[#FF4D60] to-[#FFC857] px-6 py-4 flex items-center justify-between">
+              <DialogTitle className="text-white font-extrabold text-[16px]">تسجيل مصروف جديد</DialogTitle>
+            </div>
+            <div className="p-6">
+              <Form {...expForm}>
+                <form onSubmit={expForm.handleSubmit(data => createExpense.mutate({ data }))} className="space-y-4">
+                  <FormField control={expForm.control} name="categoryId" render={({ field }) => (
+                    <FormItem><FormLabel className="text-[#8EA2BD] text-[12px] font-bold">فئة المصروف *</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value?.toString()}>
+                        <FormControl><SelectTrigger className="bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] h-[40px]"><SelectValue placeholder="اختر الفئة..." /></SelectTrigger></FormControl>
+                        <SelectContent className="bg-[#061329] border-[rgba(40,130,220,0.16)] text-white">{Array.isArray(categories) && categories.map(c => <SelectItem key={c.id} value={c.id.toString()} className="text-[12px]">{c.name}</SelectItem>)}</SelectContent>
+                      </Select><FormMessage className="text-[#FF4D60] text-[10px]" /></FormItem>
+                  )} />
+                  <FormField control={expForm.control} name="amount" render={({ field }) => (
+                    <FormItem><FormLabel className="text-[#8EA2BD] text-[12px] font-bold">المبلغ (₪) *</FormLabel>
+                      <FormControl><Input type="number" step="0.01" {...field} className="bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] h-[40px] font-mono text-left" dir="ltr" /></FormControl><FormMessage className="text-[#FF4D60] text-[10px]" /></FormItem>
+                  )} />
+                  <FormField control={expForm.control} name="vaultId" render={({ field }) => (
+                    <FormItem><FormLabel className="text-[#8EA2BD] text-[12px] font-bold">سحب من خزنة *</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value?.toString()}>
+                        <FormControl><SelectTrigger className="bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] h-[40px]"><SelectValue placeholder="اختر الخزنة..." /></SelectTrigger></FormControl>
+                        <SelectContent className="bg-[#061329] border-[rgba(40,130,220,0.16)] text-white">{vaults?.filter(v => !v.isLocked).map(v => <SelectItem key={v.id} value={v.id.toString()} className="text-[12px]">{v.name} (رصيد: {v.balance})</SelectItem>)}</SelectContent>
+                      </Select><FormMessage className="text-[#FF4D60] text-[10px]" /></FormItem>
+                  )} />
+                  <FormField control={expForm.control} name="note" render={({ field }) => (
+                    <FormItem><FormLabel className="text-[#8EA2BD] text-[12px] font-bold">البيان / ملاحظات</FormLabel>
+                      <FormControl><Textarea className="resize-none bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] min-h-[80px]" {...field} /></FormControl></FormItem>
+                  )} />
+                  <div className="pt-4 flex justify-end gap-3 border-t border-[rgba(40,130,220,0.16)] mt-6">
+                    <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)} className="text-[#8EA2BD] hover:text-white hover:bg-[rgba(255,255,255,0.05)] text-[12px] h-[38px] px-5 border-0">إلغاء</Button>
+                    <Button type="submit" disabled={createExpense.isPending} className="bg-[#FF4D60] text-white text-[12px] h-[38px] px-6 font-bold hover:brightness-110 border-0">حفظ المصروف</Button>
+                  </div>
+                </form>
+              </Form>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* ─── Category Dialog ─── */}
+        <Dialog open={isCatDialogOpen} onOpenChange={setIsCatDialogOpen}>
+          <DialogContent className="sm:max-w-[400px] border-[rgba(139,92,246,0.3)] bg-[#050C1F] p-0 overflow-hidden shadow-[0_0_40px_rgba(139,92,246,0.15)]">
+            <div className="bg-[rgba(139,92,246,0.1)] border-b border-[rgba(139,92,246,0.2)] px-6 py-4 flex items-center gap-3">
+              <div className="bg-[#8B5CF6] rounded-full p-1.5 text-white"><Tag className="w-4 h-4" /></div>
+              <DialogTitle className="text-white font-extrabold text-[15px]">{editingCatId ? "تعديل الفئة" : "إضافة فئة جديدة"}</DialogTitle>
+            </div>
+            <div className="p-6">
+              <Form {...catForm}>
+                <form onSubmit={catForm.handleSubmit(onCatSubmit)} className="space-y-4">
+                  <FormField control={catForm.control} name="name" render={({ field }) => (
+                    <FormItem><FormLabel className="text-[#8EA2BD] text-[12px] font-bold">الاسم *</FormLabel>
+                      <FormControl><Input {...field} className="bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] h-[40px]" /></FormControl><FormMessage className="text-[#FF4D60] text-[10px]" /></FormItem>
+                  )} />
+                  <FormField control={catForm.control} name="description" render={({ field }) => (
+                    <FormItem><FormLabel className="text-[#8EA2BD] text-[12px] font-bold">الوصف</FormLabel>
+                      <FormControl><Textarea className="resize-none bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] min-h-[80px]" {...field} /></FormControl></FormItem>
+                  )} />
+                  <div className="pt-4 flex justify-end gap-3 mt-4">
+                    <Button type="button" variant="ghost" onClick={() => setIsCatDialogOpen(false)} className="text-[#8EA2BD] hover:text-white border-0 text-[12px]">إلغاء</Button>
+                    <Button type="submit" disabled={createCat.isPending || updateCat.isPending} className="bg-[#8B5CF6] text-white text-[12px] h-[38px] px-6 font-bold hover:brightness-110 border-0">{editingCatId ? "حفظ التعديلات" : "إضافة الفئة"}</Button>
+                  </div>
+                </form>
+              </Form>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* ─── Routine Dialog ─── */}
+        <Dialog open={isRoutineDialogOpen} onOpenChange={setIsRoutineDialogOpen}>
+          <DialogContent className="sm:max-w-[400px] border-[rgba(0,217,208,0.3)] bg-[#050C1F] p-0 overflow-hidden shadow-[0_0_40px_rgba(0,217,208,0.15)]">
+            <div className="bg-[rgba(0,217,208,0.1)] border-b border-[rgba(0,217,208,0.2)] px-6 py-4 flex items-center gap-3">
+              <div className="bg-[#00D8D8] rounded-full p-1.5 text-[#050C1F]"><RepeatIcon className="w-4 h-4" /></div>
+              <DialogTitle className="text-white font-extrabold text-[15px]">{editingRoutineId ? "تعديل الالتزام" : "التزام دوري جديد"}</DialogTitle>
+            </div>
+            <div className="p-6">
+              <Form {...routineForm}>
+                <form onSubmit={routineForm.handleSubmit(onRoutineSubmit)} className="space-y-4">
+                  <FormField control={routineForm.control} name="title" render={({ field }) => (
+                    <FormItem><FormLabel className="text-[#8EA2BD] text-[12px] font-bold">العنوان *</FormLabel><FormControl><Input {...field} className="bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] h-[40px]" /></FormControl><FormMessage className="text-[#FF4D60] text-[10px]" /></FormItem>
+                  )} />
+                  <FormField control={routineForm.control} name="categoryId" render={({ field }) => (
+                    <FormItem><FormLabel className="text-[#8EA2BD] text-[12px] font-bold">الفئة *</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value?.toString()}>
+                        <FormControl><SelectTrigger className="bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] h-[40px]"><SelectValue placeholder="اختر الفئة..." /></SelectTrigger></FormControl>
+                        <SelectContent className="bg-[#061329] border-[rgba(40,130,220,0.16)] text-white">{Array.isArray(categories) && categories.map(c => <SelectItem key={c.id} value={c.id.toString()} className="text-[12px]">{c.name}</SelectItem>)}</SelectContent>
+                      </Select><FormMessage className="text-[#FF4D60] text-[10px]" /></FormItem>
+                  )} />
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField control={routineForm.control} name="amount" render={({ field }) => (
+                      <FormItem><FormLabel className="text-[#8EA2BD] text-[12px] font-bold">المبلغ الثابت (₪)</FormLabel><FormControl><Input type="number" step="0.01" {...field} className="bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] h-[40px] font-mono text-left" dir="ltr" /></FormControl><FormMessage className="text-[#FF4D60] text-[10px]" /></FormItem>
+                    )} />
+                    <FormField control={routineForm.control} name="frequency" render={({ field }) => (
+                      <FormItem><FormLabel className="text-[#8EA2BD] text-[12px] font-bold">التكرار *</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl><SelectTrigger className="bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] h-[40px]"><SelectValue /></SelectTrigger></FormControl>
+                          <SelectContent className="bg-[#061329] border-[rgba(40,130,220,0.16)] text-white"><SelectItem value="daily" className="text-[12px]">يومي</SelectItem><SelectItem value="weekly" className="text-[12px]">أسبوعي</SelectItem><SelectItem value="monthly" className="text-[12px]">شهري</SelectItem></SelectContent>
+                        </Select><FormMessage className="text-[#FF4D60] text-[10px]" /></FormItem>
+                    )} />
+                  </div>
+                  <FormField control={routineForm.control} name="isActive" render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-[10px] border border-[rgba(40,130,220,0.16)] bg-[rgba(6,19,41,0.6)] p-3">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-white text-[12px] font-bold">تفعيل الالتزام</FormLabel>
+                      </div>
+                      <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                    </FormItem>
+                  )} />
+                  <div className="pt-4 flex justify-end gap-3 mt-4">
+                    <Button type="button" variant="ghost" onClick={() => setIsRoutineDialogOpen(false)} className="text-[#8EA2BD] hover:text-white border-0 text-[12px]">إلغاء</Button>
+                    <Button type="submit" disabled={createRoutine.isPending || updateRoutine.isPending} className="bg-[#00D8D8] text-[#050C1F] text-[12px] h-[38px] px-6 font-bold hover:brightness-110 border-0">{editingRoutineId ? "حفظ التعديلات" : "إضافة الالتزام"}</Button>
+                  </div>
+                </form>
+              </Form>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+      </motion.div>
     </div>
   );
 }

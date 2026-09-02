@@ -1,12 +1,12 @@
 import { Router } from "express";
-import { supabase } from "../lib/supabase";
+import { tenantSupabase } from "../lib/tenant-supabase";
 
 const router = Router();
 
 router.get("/tasks", async (req, res) => {
   try {
     const { branch, isCompleted } = req.query;
-    let query = supabase.from("tasks").select("*").order("created_at", { ascending: false });
+    let query = tenantSupabase(req).from("tasks").select("*").order("created_at", { ascending: false });
     if (branch) query = query.eq("branch", branch as string);
     if (isCompleted === "true") query = query.eq("is_completed", true);
     else if (isCompleted === "false") query = query.eq("is_completed", false);
@@ -23,7 +23,7 @@ router.get("/tasks", async (req, res) => {
 router.post("/tasks", async (req, res) => {
   try {
     const { title, content, assignedTo, priority, dueDate, branch } = req.body;
-    const { data: task, error } = await supabase.from("tasks").insert({
+    const { data: task, error } = await tenantSupabase(req).from("tasks").insert({
       title, content, assigned_to: assignedTo,
       priority: priority ?? "normal", due_date: dueDate, branch,
     }).select().single();
@@ -47,7 +47,7 @@ router.patch("/tasks/:id", async (req, res) => {
     if (data.isCompleted !== undefined) updates.is_completed = data.isCompleted;
     if (data.dueDate !== undefined) updates.due_date = data.dueDate;
     if (data.branch !== undefined) updates.branch = data.branch;
-    const { data: task, error } = await supabase.from("tasks").update(updates).eq("id", id).select().single();
+    const { data: task, error } = await tenantSupabase(req).from("tasks").update(updates).eq("id", id).select().single();
     if (error || !task) return res.status(404).json({ error: "Task not found" });
     res.json(task);
   } catch (err) {
@@ -59,7 +59,7 @@ router.patch("/tasks/:id", async (req, res) => {
 router.delete("/tasks/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { error } = await supabase.from("tasks").delete().eq("id", id);
+    const { error } = await tenantSupabase(req).from("tasks").delete().eq("id", id);
     if (error) throw error;
     res.json({ success: true });
   } catch (err) {

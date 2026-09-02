@@ -1145,6 +1145,10 @@ export interface AuthResponse {
   roleId: number;
   roleName: string;
   permissions: AuthResponsePermissions;
+  clinicId?: number;
+  clinicName?: string;
+  /** @nullable */
+  isSuperadmin?: boolean | null;
 }
 
 export interface LoginInput {

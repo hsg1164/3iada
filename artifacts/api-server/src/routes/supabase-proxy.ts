@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { supabase } from "../lib/supabase";
+import { tenantSupabase, isTenantTable } from "../lib/tenant-supabase";
 
 const router = Router();
 
@@ -17,11 +17,17 @@ router.post("/db", async (req, res): Promise<any> => {
     if (!table || !ops || !Array.isArray(ops)) {
       return res.status(400).json({ error: "table and ops[] required" });
     }
+    // Tenant isolation: only clinic-owned tables are reachable through the
+    // generic proxy, and every query runs under the caller's clinic scope.
+    if (!isTenantTable(table)) {
+      return res.status(403).json({ error: `Table not allowed: ${table}` });
+    }
+    const db = tenantSupabase(req);
 
     // RPC shortcut
     const rpcOp = ops.find(o => o.op === "rpc");
     if (rpcOp) {
-      const result = await supabase.rpc(rpcOp.args[0], rpcOp.args[1] || {});
+      const result = await db.rpc(rpcOp.args[0], rpcOp.args[1] || {});
       if (result.error) return res.status(500).json({ error: result.error.message });
       return res.json({ data: result.data });
     }
@@ -35,23 +41,23 @@ router.post("/db", async (req, res): Promise<any> => {
         switch (op.op) {
           case "select":
             mode = "select";
-            query = supabase.from(table).select(op.args[0] || "*", op.args[1] || {});
+            query = db.from(table).select(op.args[0] || "*", op.args[1] || {});
             break;
           case "insert":
             mode = "insert";
-            query = supabase.from(table).insert(op.args[0]);
+            query = db.from(table).insert(op.args[0]);
             break;
           case "update":
             mode = "update";
-            query = supabase.from(table).update(op.args[0]);
+            query = db.from(table).update(op.args[0]);
             break;
           case "delete":
             mode = "delete";
-            query = supabase.from(table).delete();
+            query = db.from(table).delete();
             break;
           case "upsert":
             mode = "upsert";
-            query = supabase.from(table).upsert(op.args[0]);
+            query = db.from(table).upsert(op.args[0]);
             break;
           default:
             return res.status(400).json({ error: `Expected base op first, got ${op.op}` });

@@ -39,7 +39,7 @@ ON CONFLICT DO NOTHING;
 -- 3. SEED USERS (if not already seeded)
 -- ============================================================
 INSERT INTO system_users (username, password_hash, name, role_id, branch, is_frozen)
-SELECT 'drziyad', 'clinic123', 'د. زياد أبو دقة', r.id, 'فرع غزة', false
+SELECT 'drziyad', 'clinic123', 'الطبيب', r.id, 'فرع غزة', false
 FROM roles r WHERE r.name = 'doctor'
 AND NOT EXISTS (SELECT 1 FROM system_users WHERE username = 'drziyad');
 

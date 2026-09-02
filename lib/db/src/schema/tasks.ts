@@ -1,7 +1,9 @@
-import { pgTable, serial, text, boolean, date, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, boolean, date, timestamp, integer } from "drizzle-orm/pg-core";
+import { clinicsTable } from "./clinics";
 
 export const tasksTable = pgTable("tasks", {
   id: serial("id").primaryKey(),
+  clinicId: integer("clinic_id").notNull().default(1).references(() => clinicsTable.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   content: text("content"),
   assignedTo: text("assigned_to"),

@@ -3,6 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <script>
+      /* Theme bootstrap: default DARK, runs before first paint */
+      (function () {
+        try {
+          var t = localStorage.getItem("zyad-theme");
+          if (t !== "light") document.documentElement.classList.add("dark");
+        } catch (e) {
+          document.documentElement.classList.add("dark");
+        }
+      })();
+    </script>
     <title>العيادة - Clinic Management System</title>
     <meta name="description" content="العيادة - Clinic Management System — built on Replit. Update this description to reflect the app." />
     <meta name="robots" content="index, follow" />
@@ -12,13 +23,177 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="العيادة - Clinic Management System" />
     <meta name="twitter:description" content="العيادة - Clinic Management System — built on Replit. Update this description to reflect the app." />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="/assets/logo22.png" />
+    <meta property="og:image" content="/assets/logo22.png" />
+    <link rel="preload" href="/fonts/thmanyah/thmanyahsans-Regular.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/assets/logo.png" as="image" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <!-- شاشة إقلاع فورية (بدون JS) — تختفي لحظة جاهزية التطبيق -->
+    <!-- ===== CINEMATIC BOOT SPLASH ===== -->
+    <div id="boot" dir="rtl">
+      <div class="b-aurora"></div>
+      <div class="b-grid"></div>
+      <div class="b-particles" id="bParts"></div>
+
+      <div class="b-core">
+        <div class="b-orbit">
+          <span class="b-ring b-ring1"></span>
+          <span class="b-ring b-ring2"></span>
+          <span class="b-halo"></span>
+          <img src="/assets/logo.png" class="b-logo" alt="" />
+        </div>
+
+        <h1 class="b-name">العيادة</h1>
+        <p class="b-sub">نظام إدارة العيادات الذكي</p>
+
+        <div class="b-track"><div class="b-fill" id="bFill"></div></div>
+        <div class="b-meta">
+          <span id="bPct" dir="ltr">0%</span>
+          <span class="b-dot">•</span>
+          <span id="bStatus">جاري تهيئة النظام…</span>
+        </div>
+      </div>
+    </div>
+
+    <style>
+      #boot{position:fixed;inset:0;z-index:9999;background:#020817;display:flex;align-items:center;justify-content:center;overflow:hidden;transition:opacity .65s ease,transform .65s ease,filter .65s ease;font-family:'Thmanyah Sans','Segoe UI',Tahoma,sans-serif}
+      #boot.done{opacity:0;transform:scale(1.06);filter:blur(10px);pointer-events:none}
+
+      .b-aurora{position:absolute;inset:-25%;background:
+        radial-gradient(42% 42% at 30% 35%,rgba(2,217,217,.17),transparent 70%),
+        radial-gradient(46% 46% at 70% 62%,rgba(0,104,226,.19),transparent 70%);
+        filter:blur(70px);animation:bAurora 7s ease-in-out infinite alternate}
+      .b-grid{position:absolute;inset:0;background:
+        repeating-linear-gradient(to left,rgba(120,160,255,.055) 0 1px,transparent 1px 88px),
+        repeating-linear-gradient(to bottom,rgba(120,160,255,.055) 0 1px,transparent 1px 88px);
+        -webkit-mask-image:radial-gradient(circle at 50% 45%,#000 0%,transparent 74%);
+        mask-image:radial-gradient(circle at 50% 45%,#000 0%,transparent 74%);
+        animation:bGrid 14s linear infinite}
+      .b-particles{position:absolute;inset:0;pointer-events:none}
+      .b-particles span{position:absolute;bottom:-12px;border-radius:50%;animation:bFloat linear infinite}
+
+      .b-core{position:relative;display:flex;flex-direction:column;align-items:center;padding:0 24px;text-align:center}
+
+      .b-orbit{position:relative;width:158px;height:158px;margin-bottom:8px}
+      .b-ring{position:absolute;border-radius:50%;border:2px solid transparent}
+      .b-ring1{inset:0;border-top-color:#02D9D9;border-right-color:rgba(0,104,226,.55);animation:bSpin 1.7s linear infinite}
+      .b-ring2{inset:15px;border-bottom-color:#5EA2FF;border-left-color:rgba(2,217,217,.5);animation:bSpinRev 2.6s linear infinite}
+      .b-halo{position:absolute;inset:-20px;border-radius:50%;background:radial-gradient(circle,rgba(2,217,217,.26),transparent 66%);animation:bHalo 2s ease-in-out infinite}
+      .b-logo{position:absolute;inset:0;margin:auto;width:88px;height:88px;object-fit:contain;
+        filter:drop-shadow(0 0 26px rgba(2,217,217,.55));
+        animation:bPop .9s cubic-bezier(.22,1,.36,1) both,bBreath 2.4s 1s ease-in-out infinite}
+
+      .b-name{margin:24px 0 0;font-weight:900;font-size:27px;
+        background:linear-gradient(to left,#ffffff,#9fd8ff,#ffffff);background-size:200% auto;
+        -webkit-background-clip:text;background-clip:text;color:transparent;
+        animation:bShine 2.6s linear infinite,bFade .8s .25s both}
+      .b-sub{margin:7px 0 24px;color:#7f93b8;font-size:13px;letter-spacing:.05em;animation:bFade .8s .45s both}
+
+      .b-track{direction:rtl;position:relative;width:min(330px,74vw);height:5px;border-radius:99px;background:rgba(255,255,255,.08)}
+      .b-fill{position:relative;height:100%;width:0%;border-radius:99px;background:linear-gradient(to left,#02D9D9,#0068E2);box-shadow:0 0 16px rgba(2,217,217,.75)}
+      .b-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(to left,transparent,rgba(255,255,255,.45),transparent);transform:translateX(-100%);animation:bSweep 1.25s ease-in-out infinite}
+      .b-fill::before{content:'';position:absolute;left:-4px;top:50%;transform:translateY(-50%);width:11px;height:11px;border-radius:50%;background:#eafffb;box-shadow:0 0 18px 5px rgba(2,217,217,.9)}
+
+      .b-meta{margin-top:13px;display:flex;align-items:center;gap:10px;color:#8fa3c8;font-size:12.5px;font-weight:600}
+      #bPct{color:#02D9D9;font-weight:800;min-width:40px;font-variant-numeric:tabular-nums}
+      .b-dot{color:#33456b}
+      #bStatus{transition:opacity .22s ease}
+
+      @keyframes bAurora{from{transform:translate(-4%,-3%) scale(1)}to{transform:translate(4%,3%) scale(1.12)}}
+      @keyframes bGrid{to{background-position:88px 88px}}
+      @keyframes bFloat{to{transform:translateY(-108vh);opacity:0}}
+      @keyframes bSpin{to{transform:rotate(360deg)}}
+      @keyframes bSpinRev{to{transform:rotate(-360deg)}}
+      @keyframes bHalo{0%,100%{opacity:.55;transform:scale(.94)}50%{opacity:1;transform:scale(1.08)}}
+      @keyframes bPop{from{transform:scale(.35) rotate(-14deg);opacity:0}60%{transform:scale(1.07)}to{transform:scale(1);opacity:1}}
+      @keyframes bBreath{0%,100%{filter:drop-shadow(0 0 18px rgba(2,217,217,.4))}50%{filter:drop-shadow(0 0 34px rgba(2,217,217,.75))}}
+      @keyframes bShine{to{background-position:-200% center}}
+      @keyframes bFade{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+      @keyframes bSweep{to{transform:translateX(100%)}}
+
+      @media (prefers-reduced-motion: reduce){
+        .b-aurora,.b-grid,.b-particles span,.b-ring,.b-halo,.b-name,.b-fill::after{animation:none !important}
+      }
+    </style>
+
+    <script>
+      /* Boot splash — cinematic, ~3s guaranteed */
+      (function () {
+        var MIN_DISPLAY = 3000;
+        var PROGRESS_MS = 2500;
+        var start = Date.now();
+        var appReady = false;
+        var progressDone = false;
+        var hidden = false;
+
+        /* floating particles */
+        var parts = document.getElementById("bParts");
+        if (parts) {
+          for (var i = 0; i < 16; i++) {
+            var s = document.createElement("span");
+            var size = 2 + Math.random() * 4;
+            s.style.width = size + "px";
+            s.style.height = size + "px";
+            s.style.left = Math.random() * 100 + "%";
+            var colors = ["rgba(2,217,217,.85)", "rgba(0,104,226,.8)", "rgba(140,180,255,.7)", "rgba(255,255,255,.55)"];
+            s.style.background = colors[i % colors.length];
+            s.style.boxShadow = "0 0 " + (4 + size * 2) + "px " + s.style.background;
+            s.style.animationDuration = 4.5 + Math.random() * 5 + "s";
+            s.style.animationDelay = -Math.random() * 7 + "s";
+            parts.appendChild(s);
+          }
+        }
+
+        /* cycling status text */
+        var statuses = ["جاري تهيئة النظام…", "تحميل الواجهة…", "تجهيز لوحة التحكم…", "تأمين الاتصال…", "كشف البيانات…"];
+        var stEl = document.getElementById("bStatus");
+        var stIdx = 0;
+        var stTimer = setInterval(function () {
+          if (!stEl) return clearInterval(stTimer);
+          stEl.style.opacity = "0";
+          setTimeout(function () {
+            stIdx = (stIdx + 1) % statuses.length;
+            stEl.textContent = statuses[stIdx];
+            stEl.style.opacity = "1";
+          }, 220);
+        }, 850);
+
+        /* eased real progress bar */
+        var fill = document.getElementById("bFill");
+        var pctEl = document.getElementById("bPct");
+        function tick() {
+          var p = Math.min(1, (Date.now() - start) / PROGRESS_MS);
+          var e = 1 - Math.pow(1 - p, 3);
+          var v = Math.round(e * 100);
+          if (fill) fill.style.width = v + "%";
+          if (pctEl) pctEl.textContent = v + "%";
+          if (p < 1) requestAnimationFrame(tick);
+          else {
+            progressDone = true;
+            if (stEl) { stEl.textContent = "جاهز ✨"; }
+            tryHide();
+          }
+        }
+        requestAnimationFrame(tick);
+
+        function tryHide() {
+          if (hidden || !appReady || !progressDone) return;
+          var elapsed = Date.now() - start;
+          if (elapsed < MIN_DISPLAY) { setTimeout(tryHide, MIN_DISPLAY - elapsed); return; }
+          hidden = true;
+          clearInterval(stTimer);
+          var b = document.getElementById("boot");
+          if (!b) return;
+          b.classList.add("done");
+          setTimeout(function () { if (b.parentNode) b.parentNode.removeChild(b); }, 700);
+        }
+
+        window.addEventListener("app-ready", function () { appReady = true; tryHide(); });
+        setTimeout(function () { appReady = true; tryHide(); }, 8000);
+      })();
+    </script>
   </body>
 </html>

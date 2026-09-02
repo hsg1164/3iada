@@ -621,7 +621,7 @@ export default function Doctor() {
 
       await updateAppointmentStatus(entry.appointmentId, "in_examination");
       logActivity({
-        user_name: "د. زياد أبو دقة",
+        user_name: "الطبيب",
         action_type: "create",
         entity_type: "visit",
         entity_name: entry.name,
@@ -1321,7 +1321,7 @@ export default function Doctor() {
         <div className="space-y-6">
           {/* Error Banner */}
           {queueError && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3 text-red-700">
+            <div className="bg-[rgba(244,63,94,.08)] border border-[rgba(244,63,94,.2)] rounded-xl p-4 flex items-center gap-3 text-[#FB7185]">
               <AlertOctagon className="h-5 w-5 shrink-0" />
               <span className="flex-1 text-sm">{queueError}</span>
               <Button variant="ghost" size="sm" onClick={() => fetchQueue()} className="gap-1.5">
@@ -1398,47 +1398,47 @@ export default function Doctor() {
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="border-r-4 border-r-amber-400 shadow-md hover:shadow-lg transition-shadow">
+            <Card className="border-r-4 border-r-amber-400 shadow-md hover:shadow-[0_14px_40px_-12px_rgba(251,191,36,.35)] hover:-translate-y-0.5 transition-all duration-300">
               <CardContent className="flex items-center gap-4 p-5">
-                <div className="h-12 w-12 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
-                  <Clock className="h-6 w-6 text-amber-600" />
+                <div className="h-12 w-12 rounded-full bg-[rgba(251,191,36,.1)] flex items-center justify-center shrink-0">
+                  <Clock className="h-6 w-6 text-[#FBBF24]" />
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground">انتظار</div>
-                  <div className="text-3xl font-bold text-amber-600">{waitingCount}</div>
+                  <div className="text-3xl font-bold text-[#FBBF24]">{waitingCount}</div>
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-r-4 border-r-blue-400 shadow-md hover:shadow-lg transition-shadow">
+            <Card className="border-r-4 border-r-blue-400 shadow-md hover:shadow-[0_14px_40px_-12px_rgba(10,108,255,.4)] hover:-translate-y-0.5 transition-all duration-300">
               <CardContent className="flex items-center gap-4 p-5">
-                <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                  <UserCheck className="h-6 w-6 text-blue-600" />
+                <div className="h-12 w-12 rounded-full bg-[rgba(10,108,255,.1)] flex items-center justify-center shrink-0">
+                  <UserCheck className="h-6 w-6 text-[#0A6CFF]" />
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground">قيد الكشف</div>
-                  <div className="text-3xl font-bold text-blue-600">{inExamCount}</div>
+                  <div className="text-3xl font-bold text-[#0A6CFF]">{inExamCount}</div>
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-r-4 border-r-emerald-400 shadow-md hover:shadow-lg transition-shadow">
+            <Card className="border-r-4 border-r-emerald-400 shadow-md hover:shadow-[0_14px_40px_-12px_rgba(16,185,129,.4)] hover:-translate-y-0.5 transition-all duration-300">
               <CardContent className="flex items-center gap-4 p-5">
-                <div className="h-12 w-12 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="h-6 w-6 text-emerald-600" />
+                <div className="h-12 w-12 rounded-full bg-[rgba(16,185,129,.1)] flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="h-6 w-6 text-[#10B981]" />
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground">تم الكشف اليوم</div>
-                  <div className="text-3xl font-bold text-emerald-600">{completedCount}</div>
+                  <div className="text-3xl font-bold text-[#10B981]">{completedCount}</div>
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-r-4 border-r-violet-400 shadow-md hover:shadow-lg transition-shadow bg-gradient-to-l from-violet-50/40 to-transparent">
+            <Card className="border-r-4 border-r-violet-400 shadow-md hover:shadow-[0_14px_40px_-12px_rgba(139,92,246,.4)] hover:-translate-y-0.5 transition-all duration-300 bg-gradient-to-l from-[rgba(139,92,246,.05)] to-transparent">
               <CardContent className="flex items-center gap-4 p-5">
-                <div className="h-12 w-12 rounded-full bg-violet-100 flex items-center justify-center shrink-0">
-                  <Users className="h-6 w-6 text-violet-600" />
+                <div className="h-12 w-12 rounded-full bg-[rgba(139,92,246,.1)] flex items-center justify-center shrink-0">
+                  <Users className="h-6 w-6 text-[#8B5CF6]" />
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground">الإجمالي</div>
-                  <div className="text-3xl font-bold text-violet-600">{totalCount}</div>
+                  <div className="text-3xl font-bold text-[#8B5CF6]">{totalCount}</div>
                 </div>
               </CardContent>
             </Card>
@@ -1446,13 +1446,13 @@ export default function Doctor() {
 
           {/* Current Patient In-Exam */}
           {inExamCount > 0 && inExam.map((entry) => (
-            <Card key={entry.appointmentId} className="border-2 border-blue-200 bg-gradient-to-l from-blue-50/60 to-transparent shadow-md overflow-hidden">
+            <Card key={entry.appointmentId} className="border-2 border-[rgba(10,108,255,.25)] bg-gradient-to-l from-[rgba(10,108,255,.07)] to-transparent shadow-md overflow-hidden">
               <div className="absolute top-0 left-0 w-1 h-full bg-blue-500" />
               <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2 text-blue-700">
+                <CardTitle className="text-base flex items-center gap-2 text-[#0A6CFF]">
                   <Activity className="h-5 w-5" />
                   قيد الكشف حالياً
-                  <Badge className="bg-blue-100 text-blue-700 border-blue-200 mr-auto text-xs">
+                  <Badge className="bg-[rgba(10,108,255,.12)] text-[#7FB2FF] border-[rgba(10,108,255,.25)] mr-auto text-xs">
                     <Timer className="h-3 w-3 ml-1" />
                     {formatElapsed(elapsed)}
                   </Badge>
@@ -1463,8 +1463,8 @@ export default function Doctor() {
                   <div className="flex items-center gap-4">
                     <Avatar className={`h-14 w-14 flex items-center justify-center ring-2 ${
                       (entry.gender === "ذكر" || entry.gender === "male") 
-                        ? "bg-blue-100 text-blue-600 ring-blue-200" 
-                        : "bg-pink-100 text-pink-600 ring-pink-200"
+                        ? "bg-[rgba(10,108,255,.12)] text-[#0A6CFF] ring-[rgba(10,108,255,.3)]" 
+                        : "bg-[rgba(236,72,153,.12)] text-[#EC4899] ring-[rgba(236,72,153,.3)]"
                     }`}>
                       {(entry.gender === "ذكر" || entry.gender === "male") ? (
                         <User className="h-7 w-7" />
@@ -1490,11 +1490,11 @@ export default function Doctor() {
                       <div className="text-sm font-medium text-primary mt-1 flex items-center gap-2">
                         {entry.serviceLabel}
                         {entry.examFeePaid ? (
-                          <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200">
+                          <Badge variant="outline" className="text-xs bg-[rgba(16,185,129,.1)] text-[#34D399] border-[rgba(16,185,129,.25)]">
                             تم دفع الكشفية
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-xs bg-red-50 text-red-700 border-red-200">
+                          <Badge variant="outline" className="text-xs bg-[rgba(244,63,94,.1)] text-[#FB7185] border-[rgba(244,63,94,.25)]">
                             الكشفية غير مدفوعة
                           </Badge>
                         )}
@@ -1587,9 +1587,9 @@ export default function Doctor() {
                         className={cn(
                           "flex items-center gap-4 p-4 transition-all",
                           entry._group === "approval"
-                            ? "bg-red-50/80 hover:bg-red-100/60"
+                            ? "bg-[rgba(244,63,94,.07)] hover:bg-[rgba(244,63,94,.12)]"
                             : entry._group === "approved"
-                            ? "bg-emerald-50/80 hover:bg-emerald-100/60"
+                            ? "bg-[rgba(16,185,129,.06)] hover:bg-[rgba(16,185,129,.11)]"
                             : "hover:bg-secondary/30"
                         )}
                       >
@@ -1651,7 +1651,7 @@ export default function Doctor() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="border-amber-300 text-amber-700 hover:bg-amber-50 gap-1"
+                                className="border-amber-400/40 text-amber-300 hover:bg-amber-400/10 gap-1"
                                 onClick={() => deferPatient(entry)}
                               >
                                 <Ban className="h-3.5 w-3.5" />
@@ -1679,24 +1679,24 @@ export default function Doctor() {
 
           {/* Completed Today Preview */}
           {completedToday.length > 0 && (
-            <Card className="shadow-md border-emerald-200">
-              <CardHeader className="pb-3 border-b border-emerald-100">
-                <CardTitle className="text-base flex items-center gap-2 text-emerald-700">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+            <Card className="shadow-md border-[rgba(16,185,129,.2)] bg-gradient-to-b from-[rgba(16,185,129,.05)] to-transparent">
+              <CardHeader className="pb-3 border-b border-[rgba(16,185,129,.12)]">
+                <CardTitle className="text-base flex items-center gap-2 text-[#34D399]">
+                  <CheckCircle2 className="h-5 w-5 text-[#10B981]" />
                   تم الكشف اليوم
-                  <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 mr-2">
+                  <Badge className="bg-[rgba(16,185,129,.12)] text-[#34D399] border-[rgba(16,185,129,.25)] mr-2">
                     {completedToday.length}
                   </Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="divide-y">
+                <div className="divide-y divide-[rgba(40,130,220,.08)]">
                   {completedToday.slice(0, 5).map((entry) => (
                     <div
                       key={entry.appointmentId}
-                      className="flex items-center gap-4 p-3 px-4 hover:bg-emerald-50/40 transition-colors"
+                      className="flex items-center gap-4 p-3 px-4 hover:bg-[rgba(16,185,129,.05)] transition-colors"
                     >
-                      <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-sm shrink-0">
+                      <div className="h-10 w-10 rounded-full bg-[rgba(16,185,129,.12)] flex items-center justify-center text-[#34D399] font-bold text-sm shrink-0">
                         {entry.queueNumber}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -1778,11 +1778,11 @@ export default function Doctor() {
                         </Badge>
                       )}
                       {currentAppointment?.exam_fee_paid ? (
-                        <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
+                        <Badge variant="outline" className="bg-[rgba(16,185,129,.1)] text-[#34D399] border-[rgba(16,185,129,.25)]">
                           مدفوع {currentAppointment?.exam_fee_amount ? `(₪${currentAppointment.exam_fee_amount})` : ""}
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                        <Badge variant="outline" className="bg-[rgba(244,63,94,.1)] text-[#FB7185] border-[rgba(244,63,94,.25)]">
                           غير مدفوع {currentAppointment?.exam_fee_amount ? `(₪${currentAppointment.exam_fee_amount})` : ""}
                         </Badge>
                       )}
@@ -1860,26 +1860,26 @@ export default function Doctor() {
                 {/* Tab: History */}
                 <TabsContent value="history" className="space-y-4 mt-4">
                   {patientVisits.filter(v => v.id !== currentVisit?.id).length === 0 ? (
-                    <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                      <ClipboardList className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-                      <p className="text-slate-500 font-medium">لا يوجد سجل طبي أو زيارات سابقة لهذا المريض</p>
+                    <div className="text-center py-12 bg-[#050C1F] rounded-xl border border-dashed border-[rgba(40,130,220,.18)]">
+                      <ClipboardList className="h-12 w-12 text-[#0A6CFF]/40 mx-auto mb-3" />
+                      <p className="text-[#8EA2BD] font-medium">لا يوجد سجل طبي أو زيارات سابقة لهذا المريض</p>
                     </div>
                   ) : (
                     <div className="space-y-6">
                       {patientVisits.filter(v => v.id !== currentVisit?.id).map((v) => (
-                        <Card key={v.id} className="border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow">
-                          <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent py-4 px-5 border-b">
+                        <Card key={v.id} className="border border-[rgba(40,130,220,.16)] bg-[#061329] shadow-lg shadow-black/20 hover:shadow-[0_12px_40px_-12px_rgba(0,104,226,.35)] transition-all duration-300 hover:-translate-y-0.5">
+                          <CardHeader className="bg-gradient-to-r from-[rgba(10,108,255,.08)] to-transparent py-4 px-5 border-b border-[rgba(40,130,220,.12)]">
                             <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
                               <div>
-                                <CardTitle className="text-lg font-bold flex items-center gap-2 text-primary">
-                                  <CalendarClock className="h-5 w-5" />
+                                <CardTitle className="text-lg font-bold flex items-center gap-2 text-[#fff]">
+                                  <CalendarClock className="h-5 w-5 text-[#0A6CFF]" />
                                   زيارة بتاريخ: {new Date(v.visit_date || v.created_at).toLocaleDateString("ar-EG", { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
                                 </CardTitle>
-                                <div className="flex flex-wrap gap-4 mt-2 text-sm text-slate-600">
-                                  <span className="flex items-center gap-1.5"><Clock className="h-4 w-4 text-emerald-600" /> دخول: {formatVisitTime(v.start_time)}</span>
-                                  <span className="flex items-center gap-1.5"><ArrowRight className="h-4 w-4 text-rose-600" /> خروج: {formatVisitTime(v.end_time)}</span>
+                                <div className="flex flex-wrap gap-4 mt-2 text-sm text-[#8EA2BD]">
+                                  <span className="flex items-center gap-1.5"><Clock className="h-4 w-4 text-[#34D399]" /> دخول: {formatVisitTime(v.start_time)}</span>
+                                  <span className="flex items-center gap-1.5"><ArrowRight className="h-4 w-4 text-[#FB7185]" /> خروج: {formatVisitTime(v.end_time)}</span>
                                   {v.start_time && v.end_time && (
-                                    <span className="flex items-center gap-1.5"><Timer className="h-4 w-4 text-slate-500" /> المدة: {(() => {
+                                    <span className="flex items-center gap-1.5"><Timer className="h-4 w-4 text-[#8EA2BD]" /> المدة: {(() => {
                                       try {
                                         const s = v.start_time.includes("T") ? new Date(v.start_time) : new Date(`1970-01-01T${v.start_time}Z`);
                                         const e = v.end_time.includes("T") ? new Date(v.end_time) : new Date(`1970-01-01T${v.end_time}Z`);
@@ -1891,8 +1891,8 @@ export default function Doctor() {
                                       return "غير معروف";
                                     })()}</span>
                                   )}
-                                  <span className="flex items-center gap-1.5 font-semibold text-slate-800 border-r pr-4 border-slate-300">
-                                    <ShoppingCart className="h-4 w-4 text-blue-600" /> 
+                                  <span className="flex items-center gap-1.5 font-semibold text-[#E8F1FF] border-r pr-4 border-[rgba(40,130,220,.2)]">
+                                    <ShoppingCart className="h-4 w-4 text-[#0A6CFF]" /> 
                                     تم دفع: ₪{v.paid_amount || 0} من أصل ₪{v.total_fee || v.total_amount || 0}
                                   </span>
                                 </div>
@@ -1900,7 +1900,7 @@ export default function Doctor() {
                               {v.services && v.services.length > 0 && (
                                 <div className="flex flex-wrap justify-end gap-1.5">
                                   {v.services.map((svc: string, idx: number) => (
-                                    <Badge key={idx} variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+                                    <Badge key={idx} variant="secondary" className="bg-[rgba(10,108,255,.12)] text-[#7FB2FF] border-[rgba(10,108,255,.22)]">
                                       {svc}
                                     </Badge>
                                   ))}
@@ -1909,78 +1909,78 @@ export default function Doctor() {
                             </div>
                           </CardHeader>
                           <CardContent className="p-5 grid gap-4 grid-cols-1 md:grid-cols-2">
-                            <div className="col-span-1 md:col-span-2 bg-slate-50 p-4 rounded-xl border border-slate-100">
-                              <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2 mb-2"><Stethoscope className="h-4 w-4 text-primary" /> التشخيص</h4>
+                            <div className="col-span-1 md:col-span-2 bg-[rgba(10,108,255,.05)] p-4 rounded-xl border border-[rgba(10,108,255,.14)]">
+                              <h4 className="text-sm font-bold text-[#7FB2FF] flex items-center gap-2 mb-2"><Stethoscope className="h-4 w-4 text-[#0A6CFF]" /> التشخيص</h4>
                               {v.diagnosis ? (
-                                <p className="text-sm whitespace-pre-wrap leading-relaxed text-slate-700">{v.diagnosis}</p>
+                                <p className="text-sm whitespace-pre-wrap leading-relaxed text-[#C6D6EE]">{v.diagnosis}</p>
                               ) : (
-                                <p className="text-sm text-slate-400 italic">لا يوجد تشخيص</p>
+                                <p className="text-sm text-[#5A6E8C] italic">لا يوجد تشخيص</p>
                               )}
                             </div>
-                            <div className="col-span-1 bg-emerald-50/50 p-4 rounded-xl border border-emerald-100/50">
-                              <h4 className="text-sm font-bold text-emerald-800 flex items-center gap-2 mb-2"><FileText className="h-4 w-4 text-emerald-600" /> خطة العلاج</h4>
+                            <div className="col-span-1 bg-[rgba(16,185,129,.06)] p-4 rounded-xl border border-[rgba(16,185,129,.16)]">
+                              <h4 className="text-sm font-bold text-[#34D399] flex items-center gap-2 mb-2"><FileText className="h-4 w-4 text-[#10B981]" /> خطة العلاج</h4>
                               {v.treatment_plan ? (
-                                <p className="text-sm whitespace-pre-wrap leading-relaxed text-slate-700">{v.treatment_plan}</p>
+                                <p className="text-sm whitespace-pre-wrap leading-relaxed text-[#C6D6EE]">{v.treatment_plan}</p>
                               ) : (
-                                <p className="text-sm text-slate-400 italic">لا يوجد خطة علاج</p>
+                                <p className="text-sm text-[#5A6E8C] italic">لا يوجد خطة علاج</p>
                               )}
                             </div>
-                            <div className="col-span-1 bg-amber-50/50 p-4 rounded-xl border border-amber-100/50">
-                              <h4 className="text-sm font-bold text-amber-800 flex items-center gap-2 mb-2"><Pill className="h-4 w-4 text-amber-600" /> روشتة / وصفة طبية</h4>
+                            <div className="col-span-1 bg-[rgba(245,158,11,.06)] p-4 rounded-xl border border-[rgba(245,158,11,.16)]">
+                              <h4 className="text-sm font-bold text-[#FBBF24] flex items-center gap-2 mb-2"><Pill className="h-4 w-4 text-[#F59E0B]" /> روشتة / وصفة طبية</h4>
                               {v.prescription ? (
-                                <p className="text-sm whitespace-pre-wrap leading-relaxed text-slate-700">{v.prescription}</p>
+                                <p className="text-sm whitespace-pre-wrap leading-relaxed text-[#C6D6EE]">{v.prescription}</p>
                               ) : (
-                                <p className="text-sm text-slate-400 italic">لا يوجد وصفة طبية</p>
+                                <p className="text-sm text-[#5A6E8C] italic">لا يوجد وصفة طبية</p>
                               )}
                             </div>
-                            <div className="col-span-1 md:col-span-2 bg-purple-50/50 p-4 rounded-xl border border-purple-100/50">
-                              <h4 className="text-sm font-bold text-purple-800 flex items-center gap-2 mb-2"><Package className="h-4 w-4 text-purple-600" /> الإجراءات الموصى بها والمنتجات</h4>
+                            <div className="col-span-1 md:col-span-2 bg-[rgba(168,85,247,.06)] p-4 rounded-xl border border-[rgba(168,85,247,.16)]">
+                              <h4 className="text-sm font-bold text-[#C084FC] flex items-center gap-2 mb-2"><Package className="h-4 w-4 text-[#A855F7]" /> الإجراءات الموصى بها والمنتجات</h4>
                               {v._addons && v._addons.length > 0 ? (
                                 <div className="flex flex-wrap gap-2">
                                   {v._addons.map((a: any) => (
-                                    <Badge key={a.id} variant="outline" className="bg-white border-purple-200 text-purple-700">
+                                    <Badge key={a.id} variant="outline" className="bg-[rgba(168,85,247,.1)] border-purple-400/25 text-[#C084FC]">
                                       {a.name} {a.quantity > 1 ? `(العدد: ${a.quantity})` : ""}
                                     </Badge>
                                   ))}
                                 </div>
                               ) : (
-                                <p className="text-sm text-slate-400 italic">لا يوجد إجراءات أو منتجات</p>
+                                <p className="text-sm text-[#5A6E8C] italic">لا يوجد إجراءات أو منتجات</p>
                               )}
                             </div>
-                            <div className="col-span-1 bg-rose-50/50 p-4 rounded-xl border border-rose-100/50">
-                              <h4 className="text-sm font-bold text-rose-800 flex items-center gap-2 mb-2"><Syringe className="h-4 w-4 text-rose-600" /> مناطق الوجه - خريطة الحقن</h4>
+                            <div className="col-span-1 bg-[rgba(244,63,94,.06)] p-4 rounded-xl border border-[rgba(244,63,94,.16)]">
+                              <h4 className="text-sm font-bold text-[#FB7185] flex items-center gap-2 mb-2"><Syringe className="h-4 w-4 text-[#F43F5E]" /> مناطق الوجه - خريطة الحقن</h4>
                               {v._injections && v._injections.length > 0 ? (
                                 <div className="flex flex-col gap-1">
                                   {v._injections.map((inj: any) => (
-                                    <span key={inj.id} className="text-sm text-slate-700 font-medium">
-                                      • <span className="text-rose-700">{inj.zone}</span>: {inj.product_name} {inj.units ? `(${inj.units} وحدة)` : ""}
+                                    <span key={inj.id} className="text-sm text-[#C6D6EE] font-medium">
+                                      • <span className="text-[#FDA4AF]">{inj.zone}</span>: {inj.product_name} {inj.units ? `(${inj.units} وحدة)` : ""}
                                     </span>
                                   ))}
                                 </div>
                               ) : (
-                                <p className="text-sm text-slate-400 italic">لا يوجد سجل حقن</p>
+                                <p className="text-sm text-[#5A6E8C] italic">لا يوجد سجل حقن</p>
                               )}
                             </div>
-                            <div className="col-span-1 bg-cyan-50/50 p-4 rounded-xl border border-cyan-100/50">
-                              <h4 className="text-sm font-bold text-cyan-800 flex items-center gap-2 mb-2"><Zap className="h-4 w-4 text-cyan-600" /> جلسة ليزر</h4>
+                            <div className="col-span-1 bg-[rgba(6,182,212,.06)] p-4 rounded-xl border border-[rgba(6,182,212,.16)]">
+                              <h4 className="text-sm font-bold text-[#22D3EE] flex items-center gap-2 mb-2"><Zap className="h-4 w-4 text-[#06B6D4]" /> جلسة ليزر</h4>
                               {v._laser && v._laser.length > 0 ? (
                                 <div className="flex flex-col gap-1">
                                   {v._laser.map((las: any) => (
-                                    <span key={las.id} className="text-sm text-slate-700 font-medium">
-                                      • <span className="text-cyan-700">جهاز {las.device}</span>: {las.areas?.join("، ")} {las.settings ? `(${las.settings})` : ""}
+                                    <span key={las.id} className="text-sm text-[#C6D6EE] font-medium">
+                                      • <span className="text-[#67E8F9]">جهاز {las.device}</span>: {las.areas?.join("، ")} {las.settings ? `(${las.settings})` : ""}
                                     </span>
                                   ))}
                                 </div>
                               ) : (
-                                <p className="text-sm text-slate-400 italic">لا يوجد جلسات ليزر</p>
+                                <p className="text-sm text-[#5A6E8C] italic">لا يوجد جلسات ليزر</p>
                               )}
                             </div>
-                            <div className="col-span-1 md:col-span-2 bg-blue-50/50 p-4 rounded-xl border border-blue-100/50">
-                              <h4 className="text-sm font-bold text-blue-800 flex items-center gap-2 mb-2"><FileText className="h-4 w-4 text-blue-600" /> ملاحظات إضافية</h4>
+                            <div className="col-span-1 md:col-span-2 bg-[rgba(59,130,246,.05)] p-4 rounded-xl border border-[rgba(59,130,246,.14)]">
+                              <h4 className="text-sm font-bold text-[#60A5FA] flex items-center gap-2 mb-2"><FileText className="h-4 w-4 text-[#3B82F6]" /> ملاحظات إضافية</h4>
                               {v.notes ? (
-                                <p className="text-sm whitespace-pre-wrap leading-relaxed text-slate-700">{v.notes.split("\n⏱ مدة الكشف")[0]}</p>
+                                <p className="text-sm whitespace-pre-wrap leading-relaxed text-[#C6D6EE]">{v.notes.split("\n⏱ مدة الكشف")[0]}</p>
                               ) : (
-                                <p className="text-sm text-slate-400 italic">لا توجد ملاحظات</p>
+                                <p className="text-sm text-[#5A6E8C] italic">لا توجد ملاحظات</p>
                               )}
                             </div>
                           </CardContent>
@@ -2434,7 +2434,7 @@ export default function Doctor() {
                                 "px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
                                 followUpInterval === opt.value
                                   ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                                  : "bg-white text-muted-foreground border-gray-200 hover:border-emerald-300 hover:text-emerald-700"
+                                  : "bg-[#0A1428] text-[#8EA2BD] border-[rgba(40,130,220,.2)] hover:border-emerald-500/50 hover:text-emerald-300"
                               )}
                             >
                               {opt.label}
@@ -2694,10 +2694,10 @@ export default function Doctor() {
                               <div
                                 key={product.id}
                                 className={cn(
-                                  "border rounded-xl p-4 transition-all cursor-pointer hover:shadow-md group",
+                                  "border rounded-xl p-4 transition-all cursor-pointer hover:shadow-md hover:-translate-y-0.5 duration-200 group",
                                   inAddons
-                                    ? "border-emerald-300 bg-emerald-50/60 shadow-sm"
-                                    : "border-border hover:border-emerald-300"
+                                    ? "border-[rgba(16,185,129,.35)] bg-[rgba(16,185,129,.07)] shadow-[0_6px_20px_-6px_rgba(16,185,129,.25)]"
+                                    : "border-[rgba(40,130,220,.16)] hover:border-emerald-500/40"
                                 )}
                                 onClick={() => addRecommendedProduct(product)}
                               >
@@ -2706,7 +2706,7 @@ export default function Doctor() {
                                     className={cn(
                                       "h-10 w-10 rounded-lg flex items-center justify-center",
                                       inAddons
-                                        ? "bg-emerald-200 text-emerald-700"
+                                        ? "bg-[rgba(16,185,129,.15)] text-[#34D399]"
                                         : "bg-secondary text-muted-foreground"
                                     )}
                                   >
@@ -2905,7 +2905,7 @@ export default function Doctor() {
                                       {comparePhotos.map((p, idx) => (
                                         <div key={idx} className="space-y-3">
                                           <div className="flex justify-between items-center text-sm">
-                                            <Badge variant={idx === 0 ? "secondary" : "default"} className={idx === 0 ? "bg-slate-200 text-slate-800" : "bg-emerald-100 text-emerald-800"}>
+                                            <Badge variant={idx === 0 ? "secondary" : "default"} className={idx === 0 ? "bg-[#0A1428] text-[#8EA2BD] border-[rgba(40,130,220,.2)]" : "bg-[rgba(16,185,129,.12)] text-[#34D399] border-[rgba(16,185,129,.25)]"}>
                                               {idx === 0 ? "الصورة الأولى (قبل)" : "الصورة الثانية (بعد)"}
                                             </Badge>
                                             <span className="text-muted-foreground font-mono text-xs">
@@ -2915,7 +2915,7 @@ export default function Doctor() {
                                           <div className="rounded-xl overflow-hidden border-2 shadow-sm bg-black">
                                             <img src={p.cloudinary_url} alt="Compare" className="w-full object-contain max-h-[500px]" />
                                           </div>
-                                          {p.notes && <p className="text-sm text-slate-600 bg-slate-50 p-2 rounded-lg border">{p.notes}</p>}
+                                          {p.notes && <p className="text-sm text-[#C6D6EE] bg-[#0A1428] p-2 rounded-lg border border-[rgba(40,130,220,.16)]">{p.notes}</p>}
                                         </div>
                                       ))}
                                     </div>
@@ -2937,7 +2937,7 @@ export default function Doctor() {
                                   key={photo.id} 
                                   className={cn(
                                     "rounded-xl overflow-hidden border-2 transition-all cursor-pointer bg-card group relative",
-                                    compareMode ? "hover:border-primary hover:shadow-md" : "hover:border-slate-300",
+                                    compareMode ? "hover:border-primary hover:shadow-[0_10px_30px_-10px_rgba(0,104,226,.4)]" : "hover:border-[rgba(0,216,216,.35)] hover:shadow-[0_10px_30px_-10px_rgba(0,216,216,.25)]",
                                     isSelectedForCompare ? "border-primary shadow-md ring-2 ring-primary/30" : "border-border"
                                   )}
                                   onClick={() => {
@@ -2962,8 +2962,8 @@ export default function Doctor() {
                                     />
                                     {compareMode && (
                                       <div className={cn(
-                                        "absolute top-2 right-2 h-6 w-6 rounded-full border-2 flex items-center justify-center bg-white/80 transition-colors",
-                                        isSelectedForCompare ? "border-primary bg-primary text-white" : "border-slate-400 text-transparent"
+                                        "absolute top-2 right-2 h-6 w-6 rounded-full border-2 flex items-center justify-center bg-[#020817]/70 backdrop-blur transition-colors",
+                                        isSelectedForCompare ? "border-primary bg-primary text-white" : "border-[#3A5476] text-transparent"
                                       )}>
                                         <CheckCheck className="h-3.5 w-3.5" />
                                       </div>
@@ -2975,18 +2975,18 @@ export default function Doctor() {
                                     </div>
                                   </div>
                                   {photo.notes && (
-                                    <div className="p-2 text-[10px] text-muted-foreground bg-slate-50 border-t truncate" title={photo.notes}>
+                                    <div className="p-2 text-[10px] text-muted-foreground bg-[#0A1428] border-t border-[rgba(40,130,220,.12)] truncate" title={photo.notes}>
                                       {photo.notes}
                                     </div>
                                   )}
                                   {!compareMode && (
                                     <div className="absolute top-2 left-2 right-2 flex justify-between items-start opacity-100 transition-opacity">
                                       <div className="flex flex-col gap-1">
-                                        <Button variant="secondary" size="sm" className="h-7 px-2 shadow-sm bg-white/90 hover:bg-white text-blue-600 gap-1 text-xs" onClick={(e) => { e.stopPropagation(); handleShareLink(photo); }} title="مشاركة الرابط">
+                                        <Button variant="secondary" size="sm" className="h-7 px-2 shadow-sm bg-[#061329]/90 hover:bg-[#0A1428] text-[#0A6CFF] border border-[rgba(40,130,220,.2)] gap-1 text-xs" onClick={(e) => { e.stopPropagation(); handleShareLink(photo); }} title="مشاركة الرابط">
                                           <Share2 className="h-3.5 w-3.5" />
                                           مشاركة
                                         </Button>
-                                        <Button variant="secondary" size="icon" className="h-7 w-7 shadow-sm bg-white/90 hover:bg-white text-slate-700" onClick={(e) => { e.stopPropagation(); handleShowQr(photo); }} title="عرض كود QR">
+                                        <Button variant="secondary" size="icon" className="h-7 w-7 shadow-sm bg-[#061329]/90 hover:bg-[#0A1428] text-[#00D8D8] border border-[rgba(40,130,220,.2)]" onClick={(e) => { e.stopPropagation(); handleShowQr(photo); }} title="عرض كود QR">
                                           <QrCode className="h-3.5 w-3.5" />
                                         </Button>
                                       </div>
@@ -3001,9 +3001,9 @@ export default function Doctor() {
                           </div>
                         </div>
                       ) : (
-                        <div className="py-16 text-center text-muted-foreground bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                          <Image className="h-16 w-16 mx-auto mb-4 text-slate-300" />
-                          <p className="text-lg font-medium text-slate-600 mb-2">لا توجد صور في المعرض</p>
+                        <div className="py-16 text-center text-muted-foreground bg-[#050C1F] rounded-2xl border border-dashed border-[rgba(40,130,220,.18)]">
+                          <Image className="h-16 w-16 mx-auto mb-4 text-[#1E3A5F]" />
+                          <p className="text-lg font-medium text-[#8EA2BD] mb-2">لا توجد صور في المعرض</p>
                           <p className="text-sm">يمكنك إضافة صور جديدة من الجهاز أو تصوير المريض مباشرة لتكوين معرض صوره الخاص</p>
                         </div>
                       )}
@@ -3011,8 +3011,8 @@ export default function Doctor() {
                   ) : (
                     <Card>
                       <CardContent className="py-16 text-center text-muted-foreground">
-                        <User className="h-16 w-16 mx-auto mb-4 text-slate-200" />
-                        <p className="text-xl font-medium text-slate-600">اختر مريضاً أولاً</p>
+                        <User className="h-16 w-16 mx-auto mb-4 text-[#1E3A5F]" />
+                        <p className="text-xl font-medium text-[#8EA2BD]">اختر مريضاً أولاً</p>
                         <p className="text-sm mt-2">اختر مريضاً من الطابور لعرض المعرض الخاص به</p>
                       </CardContent>
                     </Card>
@@ -3219,7 +3219,7 @@ export default function Doctor() {
               <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  className="gap-2 text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
+                  className="gap-2 text-emerald-300 border-[rgba(16,185,129,.3)] hover:bg-[rgba(16,185,129,.08)] hover:text-emerald-200"
                   onClick={saveDraft}
                   disabled={sessionSaving}
                 >
@@ -3295,12 +3295,12 @@ export default function Doctor() {
                   className={cn(
                     "px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
                     followUpInterval === opt.value
-                      ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                      : "bg-white text-muted-foreground border-gray-200 hover:border-emerald-300 hover:text-emerald-700"
-                  )}
-                >
-                  {opt.label}
-                </button>
+? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                                  : "bg-[#0A1428] text-[#8EA2BD] border-[rgba(40,130,220,.2)] hover:border-emerald-500/50 hover:text-emerald-300"
+                              )}
+                            >
+                              {opt.label}
+                            </button>
               ))}
             </div>
 
@@ -3687,7 +3687,7 @@ export default function Doctor() {
                                         )}
 
                                         {/* Financial Summary */}
-                                        <Card className="bg-gradient-to-l from-emerald-50 to-amber-50 border-emerald-200/50 dark:from-emerald-950/20 dark:to-amber-950/20">
+                                        <Card className="bg-gradient-to-l from-[rgba(16,185,129,.06)] to-[rgba(245,158,11,.06)] border-[rgba(40,130,220,.14)]">
                                           <CardContent className="p-4">
                                             <div className="grid grid-cols-3 gap-4 text-center">
                                               <div>
@@ -3941,7 +3941,7 @@ export default function Doctor() {
               )}
 
               {/* Financial */}
-              <Card className="bg-gradient-to-l from-emerald-50 to-amber-50 border-emerald-200/50 dark:from-emerald-950/20 dark:to-amber-950/20">
+              <Card className="bg-gradient-to-l from-[rgba(16,185,129,.06)] to-[rgba(245,158,11,.06)] border-[rgba(40,130,220,.14)]">
                 <CardContent className="p-4">
                   <div className="grid grid-cols-3 gap-4 text-center">
                     <div>

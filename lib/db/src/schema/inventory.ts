@@ -1,9 +1,11 @@
 import { pgTable, serial, text, numeric, boolean, integer, timestamp, date } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { clinicsTable } from "./clinics";
 
 export const inventoryItemsTable = pgTable("inventory_items", {
   id: serial("id").primaryKey(),
+  clinicId: integer("clinic_id").notNull().default(1).references(() => clinicsTable.id, { onDelete: "cascade" }),
   barcode: text("barcode"),
   branch: text("branch").notNull(),
   name: text("name").notNull(),
@@ -22,7 +24,8 @@ export const inventoryItemsTable = pgTable("inventory_items", {
 
 export const inventoryTransactionsTable = pgTable("inventory_transactions", {
   id: serial("id").primaryKey(),
-  itemId: integer("item_id").notNull(),
+  clinicId: integer("clinic_id").notNull().default(1).references(() => clinicsTable.id, { onDelete: "cascade" }),
+  itemId: integer("item_id").notNull().references(() => inventoryItemsTable.id, { onDelete: "cascade" }),
   type: text("type").notNull(),
   quantity: numeric("quantity", { precision: 10, scale: 3 }).notNull(),
   note: text("note"),
@@ -32,6 +35,7 @@ export const inventoryTransactionsTable = pgTable("inventory_transactions", {
 
 export const supplierDebtsTable = pgTable("supplier_debts", {
   id: serial("id").primaryKey(),
+  clinicId: integer("clinic_id").notNull().default(1).references(() => clinicsTable.id, { onDelete: "cascade" }),
   supplierName: text("supplier_name").notNull(),
   itemName: text("item_name").notNull(),
   amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),

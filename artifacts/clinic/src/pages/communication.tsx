@@ -14,7 +14,7 @@ import { MessageSquare, Send, Bell, Megaphone, CheckCircle2, Clock, Phone, Users
 const TODAY = new Date().toISOString().split("T")[0];
 
 const TEMPLATES = [
-  { id: 1, name: "تذكير موعد اليوم", text: "مرحباً {{name}}، نذكركم بموعدكم اليوم في عيادة د. زياد أبو دقة." },
+  { id: 1, name: "تذكير موعد اليوم", text: "مرحباً {{name}}، نذكركم بموعدكم اليوم في العيادة." },
   { id: 2, name: "تأكيد الحجز", text: "عزيزنا {{name}}، تم تأكيد حجزكم بتاريخ {{date}}. نتطلع لرؤيتكم." },
   { id: 3, name: "عرض خاص", text: "عزيزنا {{name}}، يسعدنا إعلامكم عن عرض خاص في عيادتنا. للمزيد اتصل بنا." },
   { id: 4, name: "متابعة بعد الزيارة", text: "مرحباً {{name}}، نتمنى أن تكونوا بخير بعد زيارتكم. للاستفسار لا تترددوا." },

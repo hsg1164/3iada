@@ -1,11 +1,11 @@
 import { Router } from "express";
-import { supabase } from "../lib/supabase";
+import { tenantSupabase } from "../lib/tenant-supabase";
 
 const router = Router();
 
 router.get("/patients/next-code", async (req, res) => {
   try {
-    const { data } = await supabase.from("patients").select("local_code").order("local_code", { ascending: false }).limit(1);
+    const { data } = await tenantSupabase(req).from("patients").select("local_code").order("local_code", { ascending: false }).limit(1);
     const lastCode = data?.[0]?.local_code ?? 9000;
     res.json({ nextCode: lastCode + 1, lastCode });
   } catch (err) {
@@ -16,7 +16,7 @@ router.get("/patients/next-code", async (req, res) => {
 
 router.get("/patients/deleted", async (req, res) => {
   try {
-    const { data, error } = await supabase.from("patients").select("*").eq("is_deleted", true).order("updated_at", { ascending: false });
+    const { data, error } = await tenantSupabase(req).from("patients").select("*").eq("is_deleted", true).order("updated_at", { ascending: false });
     if (error) throw error;
     res.json((data ?? []).map(formatPatient));
   } catch (err) {
@@ -32,7 +32,7 @@ router.get("/patients", async (req, res) => {
     const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
     const offset = (pageNum - 1) * limitNum;
 
-    let query = supabase.from("patients").select("*", { count: "exact" }).eq("is_deleted", false);
+    let query = tenantSupabase(req).from("patients").select("*", { count: "exact" }).eq("is_deleted", false);
     if (search) {
       const filters = [`name_ar.ilike.%${search}%`, `name_en.ilike.%${search}%`];
       const codeNum = parseInt(search);
@@ -63,7 +63,7 @@ router.get("/patients", async (req, res) => {
     if (error) throw error;
 
       const enriched = await Promise.all((rows ?? []).map(async (p) => {
-        const { data: visits } = await supabase.from("visits").select("visit_date").eq("patient_id", p.id);
+        const { data: visits } = await tenantSupabase(req).from("visits").select("visit_date").eq("patient_id", p.id);
         const totalVisits = visits?.length ?? 0;
         const lastVisitDate = visits?.sort((a, b) => b.visit_date.localeCompare(a.visit_date))[0]?.visit_date ?? p.created_at ?? null;
         return { ...formatPatient(p), totalVisits, lastVisitDate };
@@ -83,11 +83,11 @@ router.post("/patients", async (req, res) => {
 
     let localCode = data.localCode;
     if (!localCode) {
-      const { data: last } = await supabase.from("patients").select("local_code").order("local_code", { ascending: false }).limit(1);
+      const { data: last } = await tenantSupabase(req).from("patients").select("local_code").order("local_code", { ascending: false }).limit(1);
       localCode = (last?.[0]?.local_code ?? 9000) + 1;
     }
 
-    const { data: patient, error } = await supabase.from("patients").insert({
+    const { data: patient, error } = await tenantSupabase(req).from("patients").insert({
       local_code: localCode,
       name_ar: data.nameAr,
       name_en: data.nameEn || null,
@@ -119,9 +119,9 @@ router.post("/patients", async (req, res) => {
 router.get("/patients/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { data: patient, error } = await supabase.from("patients").select("*").eq("id", id).single();
+    const { data: patient, error } = await tenantSupabase(req).from("patients").select("*").eq("id", id).single();
     if (error || !patient) return res.status(404).json({ error: "Not found" });
-    const { data: visits } = await supabase.from("visits").select("visit_date").eq("patient_id", id);
+    const { data: visits } = await tenantSupabase(req).from("visits").select("visit_date").eq("patient_id", id);
     const totalVisits = visits?.length ?? 0;
     const lastVisitDate = visits?.sort((a, b) => b.visit_date.localeCompare(a.visit_date))[0]?.visit_date ?? null;
     res.json({ ...formatPatient(patient), totalVisits, lastVisitDate });
@@ -154,9 +154,9 @@ router.patch("/patients/:id", async (req, res) => {
     if (data.notes !== undefined) updates.notes = data.notes;
     if (data.photoUrl !== undefined) updates.photo_url = data.photoUrl;
 
-    const { data: updated, error } = await supabase.from("patients").update(updates).eq("id", id).select().single();
+    const { data: updated, error } = await tenantSupabase(req).from("patients").update(updates).eq("id", id).select().single();
     if (error || !updated) return res.status(404).json({ error: "Not found" });
-    const { data: visits } = await supabase.from("visits").select("visit_date").eq("patient_id", id);
+    const { data: visits } = await tenantSupabase(req).from("visits").select("visit_date").eq("patient_id", id);
     const totalVisits = visits?.length ?? 0;
     const lastVisitDate = visits?.sort((a, b) => b.visit_date.localeCompare(a.visit_date))[0]?.visit_date ?? null;
     res.json({ ...formatPatient(updated), totalVisits, lastVisitDate });
@@ -168,7 +168,7 @@ router.patch("/patients/:id", async (req, res) => {
 
 router.delete("/patients/all", async (req, res) => {
   try {
-    const { data, error } = await supabase.from("patients").update({ is_deleted: true, updated_at: new Date().toISOString() }).neq("id", 0).select("id");
+    const { data, error } = await tenantSupabase(req).from("patients").update({ is_deleted: true, updated_at: new Date().toISOString() }).neq("id", 0).select("id");
     if (error) throw error;
     res.json({ success: true, message: "تم حذف جميع المرضى", count: data?.length ?? 0 });
   } catch (err) {
@@ -180,7 +180,7 @@ router.delete("/patients/all", async (req, res) => {
 router.delete("/patients/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { error } = await supabase.from("patients").update({ is_deleted: true, updated_at: new Date().toISOString() }).eq("id", id);
+    const { error } = await tenantSupabase(req).from("patients").update({ is_deleted: true, updated_at: new Date().toISOString() }).eq("id", id);
     if (error) throw error;
     res.json({ success: true, message: "Patient deleted" });
   } catch (err) {
@@ -192,7 +192,7 @@ router.delete("/patients/:id", async (req, res) => {
 router.post("/patients/:id/restore", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { data: p, error } = await supabase.from("patients").update({ is_deleted: false, updated_at: new Date().toISOString() }).eq("id", id).select().single();
+    const { data: p, error } = await tenantSupabase(req).from("patients").update({ is_deleted: false, updated_at: new Date().toISOString() }).eq("id", id).select().single();
     if (error) throw error;
     res.json(formatPatient(p));
   } catch (err) {
@@ -204,7 +204,7 @@ router.post("/patients/:id/restore", async (req, res) => {
 router.delete("/patients/:id/permanent-delete", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { error } = await supabase.from("patients").delete().eq("id", id);
+    const { error } = await tenantSupabase(req).from("patients").delete().eq("id", id);
     if (error) throw error;
     res.json({ success: true, message: "Patient permanently deleted" });
   } catch (err) {
@@ -216,14 +216,14 @@ router.delete("/patients/:id/permanent-delete", async (req, res) => {
 router.get("/patients/:id/visits", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { data: visits, error } = await supabase.from("visits").select("*").eq("patient_id", id).order("visit_date", { ascending: false });
+    const { data: visits, error } = await tenantSupabase(req).from("visits").select("*").eq("patient_id", id).order("visit_date", { ascending: false });
     if (error) throw error;
 
     const enriched = await Promise.all((visits ?? []).map(async (v) => {
       const [addons, injections, laser] = await Promise.all([
-        supabase.from("session_addons").select("*").eq("visit_id", v.id),
-        supabase.from("injection_logs").select("*").eq("visit_id", v.id),
-        supabase.from("laser_logs").select("*").eq("visit_id", v.id),
+        tenantSupabase(req).from("session_addons").select("*").eq("visit_id", v.id),
+        tenantSupabase(req).from("injection_logs").select("*").eq("visit_id", v.id),
+        tenantSupabase(req).from("laser_logs").select("*").eq("visit_id", v.id),
       ]);
       const duration = (v.start_time && v.end_time)
         ? Math.floor((new Date(v.end_time).getTime() - new Date(v.start_time).getTime()) / 1000)
@@ -300,7 +300,7 @@ router.post("/patients/bulk-import", async (req, res) => {
         try {
           let localCode = p.localCode;
           if (!localCode || localCode === "لا يوجد") {
-            const { data: last } = await supabase.from("patients").select("local_code").order("local_code", { ascending: false }).limit(1);
+            const { data: last } = await tenantSupabase(req).from("patients").select("local_code").order("local_code", { ascending: false }).limit(1);
             localCode = (last?.[0]?.local_code ?? 9000) + 1;
           }
 
@@ -356,7 +356,7 @@ router.post("/patients/bulk-import", async (req, res) => {
 
       if (batchRows.length > 0) {
         const deduped = Array.from(new Map(batchRows.map(r => [r.local_code, r])).values());
-        const { data, error } = await supabase.from("patients").upsert(deduped, { onConflict: "local_code", ignoreDuplicates: false }).select("local_code");
+        const { data, error } = await tenantSupabase(req).from("patients").upsert(deduped, { onConflict: "clinic_id,local_code", ignoreDuplicates: false }).select("local_code");
         if (error) {
           errors.push({ row: i + 1, error: error.message });
         } else {
@@ -405,6 +405,7 @@ function formatPatient(p: any) {
   }
   return {
     id: p.id,
+    clinicId: p.clinic_id,
     localCode: p.local_code,
     nameAr: p.name_ar,
     nameEn: p.name_en,

@@ -1,11 +1,11 @@
 import { Router } from "express";
-import { supabase } from "../lib/supabase";
+import { tenantSupabase } from "../lib/tenant-supabase";
 
 const router = Router();
 
 router.get("/templates/prescriptions", async (req, res) => {
   try {
-    const { data, error } = await supabase.from("prescription_templates").select("*").order("name");
+    const { data, error } = await tenantSupabase(req).from("prescription_templates").select("*").order("name");
     if (error) throw error;
     res.json(data ?? []);
   } catch (err) {
@@ -17,7 +17,7 @@ router.get("/templates/prescriptions", async (req, res) => {
 router.post("/templates/prescriptions", async (req, res) => {
   try {
     const { name, content, category } = req.body;
-    const { data: t, error } = await supabase.from("prescription_templates").insert({ name, content, category }).select().single();
+    const { data: t, error } = await tenantSupabase(req).from("prescription_templates").insert({ name, content, category }).select().single();
     if (error) throw error;
     res.status(201).json(t);
   } catch (err) {
@@ -34,7 +34,7 @@ router.patch("/templates/prescriptions/:id", async (req, res) => {
     if (data.name !== undefined) updates.name = data.name;
     if (data.content !== undefined) updates.content = data.content;
     if (data.category !== undefined) updates.category = data.category;
-    const { data: updated, error } = await supabase.from("prescription_templates").update(updates).eq("id", id).select().single();
+    const { data: updated, error } = await tenantSupabase(req).from("prescription_templates").update(updates).eq("id", id).select().single();
     if (error) throw error;
     res.json(updated);
   } catch (err) {
@@ -46,7 +46,7 @@ router.patch("/templates/prescriptions/:id", async (req, res) => {
 router.delete("/templates/prescriptions/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { error } = await supabase.from("prescription_templates").delete().eq("id", id);
+    const { error } = await tenantSupabase(req).from("prescription_templates").delete().eq("id", id);
     if (error) throw error;
     res.json({ success: true, message: "Template deleted" });
   } catch (err) {
@@ -57,7 +57,7 @@ router.delete("/templates/prescriptions/:id", async (req, res) => {
 
 router.get("/templates/investigations", async (req, res) => {
   try {
-    const { data, error } = await supabase.from("investigation_templates").select("*").order("type").order("name");
+    const { data, error } = await tenantSupabase(req).from("investigation_templates").select("*").order("type").order("name");
     if (error) throw error;
     res.json((data ?? []).map((r: any) => ({ ...r, tests: r.tests ?? [] })));
   } catch (err) {
@@ -69,7 +69,7 @@ router.get("/templates/investigations", async (req, res) => {
 router.post("/templates/investigations", async (req, res) => {
   try {
     const { name, type, tests } = req.body;
-    const { data: t, error } = await supabase.from("investigation_templates").insert({ name, type, tests }).select().single();
+    const { data: t, error } = await tenantSupabase(req).from("investigation_templates").insert({ name, type, tests }).select().single();
     if (error) throw error;
     res.status(201).json({ ...t, tests: (t as any).tests ?? [] });
   } catch (err) {

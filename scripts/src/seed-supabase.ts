@@ -45,7 +45,7 @@ async function seed() {
 
     await supabase.from("system_users").insert([
       { username: "admin", password_hash: "admin123", role_id: roleMap["مدير النظام"], name: "مدير النظام", branch_id: branches?.[0]?.id || null, is_frozen: false },
-      { username: "doctor", password_hash: "doctor123", role_id: roleMap["طبيب"], name: "د. زياد أبو دقة", branch_id: branches?.[0]?.id || null, is_frozen: false },
+      { username: "doctor", password_hash: "doctor123", role_id: roleMap["طبيب"], name: "الطبيب", branch_id: branches?.[0]?.id || null, is_frozen: false },
       { username: "secretary", password_hash: "secretary123", role_id: roleMap["موظف استقبال"], name: "موظف الاستقبال", branch_id: branches?.[0]?.id || null, is_frozen: false },
     ]);
     console.log("✓ Users seeded");
@@ -116,7 +116,7 @@ async function seed() {
   const { data: settings } = await supabase.from("system_settings").select("id").limit(1);
   if (!settings?.length) {
     await supabase.from("system_settings").insert([
-      { key: "clinic_name_ar", value: "عيادة د. زياد أبو دقة للتجميل والليزر" },
+      { key: "clinic_name_ar", value: "العيادة" },
       { key: "clinic_name_en", value: "Dr. Ziyad Abu Daqqa Clinic" },
       { key: "default_currency", value: "ILS" },
     ]);

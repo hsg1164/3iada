@@ -1,14 +1,15 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
-import { supabase } from "../lib/supabase";
+import { tenantSupabase } from "../lib/tenant-supabase";
+import { invalidateUserStatus } from "../lib/clinic-status";
 
 const router = Router();
 
 router.get("/users", async (req, res) => {
   try {
     const [{ data: rows, error }, { data: roles }] = await Promise.all([
-      supabase.from("system_users").select("*").order("name"),
-      supabase.from("roles").select("id, name"),
+      tenantSupabase(req).from("system_users").select("*").order("name"),
+      tenantSupabase(req).from("roles").select("id, name"),
     ]);
     if (error) throw error;
     const roleMap = Object.fromEntries((roles ?? []).map((r: any) => [r.id, r.name]));
@@ -27,11 +28,11 @@ router.post("/users", async (req, res) => {
   try {
     const { name, username, password, email, roleId, branch } = req.body;
     const password_hash = password ? await bcrypt.hash(password, 10) : "";
-    const { data: user, error } = await supabase.from("system_users").insert({
+    const { data: user, error } = await tenantSupabase(req).from("system_users").insert({
       name, username, password_hash, email, role_id: roleId, branch,
     }).select().single();
     if (error) throw error;
-    const { data: role } = await supabase.from("roles").select("name").eq("id", roleId).single();
+    const { data: role } = await tenantSupabase(req).from("roles").select("name").eq("id", roleId).single();
     res.status(201).json({
       id: (user as any).id, name: (user as any).name, username: (user as any).username,
       email: (user as any).email, roleId: (user as any).role_id, roleName: (role as any)?.name ?? "",
@@ -53,9 +54,11 @@ router.patch("/users/:id", async (req, res) => {
     if (data.branch !== undefined) updates.branch = data.branch;
     if (data.isFrozen !== undefined) updates.is_frozen = data.isFrozen;
     if (data.password !== undefined && data.password !== "") updates.password_hash = await bcrypt.hash(data.password, 10);
-    const { data: updated, error } = await supabase.from("system_users").update(updates).eq("id", id).select().single();
+    const { data: updated, error } = await tenantSupabase(req).from("system_users").update(updates).eq("id", id).select().single();
     if (error) throw error;
-    const { data: roles } = await supabase.from("roles").select("id, name");
+    // Freeze/unfreeze from the clinic panel must apply immediately.
+    if (updates.is_frozen !== undefined) invalidateUserStatus(id);
+    const { data: roles } = await tenantSupabase(req).from("roles").select("id, name");
     const roleMap = Object.fromEntries((roles ?? []).map((r: any) => [r.id, r.name]));
     res.json({
       id: (updated as any).id, name: (updated as any).name, username: (updated as any).username,
@@ -70,7 +73,7 @@ router.patch("/users/:id", async (req, res) => {
 
 router.get("/roles", async (req, res) => {
   try {
-    const { data, error } = await supabase.from("roles").select("*").order("name");
+    const { data, error } = await tenantSupabase(req).from("roles").select("*").order("name");
     if (error) throw error;
     res.json((data ?? []).map((r: any) => ({ ...r, permissions: r.permissions ?? {} })));
   } catch (err) {
@@ -82,7 +85,7 @@ router.get("/roles", async (req, res) => {
 router.post("/roles", async (req, res) => {
   try {
     const { name, permissions } = req.body;
-    const { data: role, error } = await supabase.from("roles").insert({ name, permissions }).select().single();
+    const { data: role, error } = await tenantSupabase(req).from("roles").insert({ name, permissions }).select().single();
     if (error) throw error;
     res.status(201).json(role);
   } catch (err) {
@@ -98,7 +101,7 @@ router.patch("/roles/:id", async (req, res) => {
     const updates: any = {};
     if (data.name !== undefined) updates.name = data.name;
     if (data.permissions !== undefined) updates.permissions = data.permissions;
-    const { data: updated, error } = await supabase.from("roles").update(updates).eq("id", id).select().single();
+    const { data: updated, error } = await tenantSupabase(req).from("roles").update(updates).eq("id", id).select().single();
     if (error) throw error;
     res.json(updated);
   } catch (err) {

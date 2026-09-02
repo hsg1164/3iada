@@ -296,7 +296,7 @@ END $$;
 
 -- 7a. Branches (if not exists)
 INSERT INTO branches (name, name_en, is_active)
-SELECT 'مركز د. زياد أبو دقة التجميلي - غزة', 'Dr. Ziyad Clinic - Gaza', true
+SELECT 'العيادة - غزة', 'Dr. Ziyad Clinic - Gaza', true
 WHERE NOT EXISTS (SELECT 1 FROM branches WHERE name LIKE '%زياد أبو دقة%');
 
 -- 7b. Roles (if not exists)
@@ -318,7 +318,7 @@ WHERE NOT EXISTS (SELECT 1 FROM roles WHERE name = 'cashier');
 
 -- 7c. Users (if not exists)
 INSERT INTO system_users (username, password_hash, name, role_id, branch, is_frozen)
-SELECT 'drziyad', 'clinic123', 'د. زياد أبو دقة', r.id, 'فرع غزة', false
+SELECT 'drziyad', 'clinic123', 'الطبيب', r.id, 'فرع غزة', false
 FROM roles r WHERE r.name = 'doctor'
 AND NOT EXISTS (SELECT 1 FROM system_users WHERE username = 'drziyad');
 

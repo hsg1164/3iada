@@ -6,12 +6,9 @@ import {
   useCancelAppointment, useListPatients, useListServices, useListBranches 
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,8 +17,13 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Calendar as CalendarIcon, Clock, Filter, DollarSign, XCircle, ChevronDown, CheckCircle, Activity, User, Phone } from "lucide-react";
+import {
+  Plus, Calendar as CalendarIcon, Clock, Filter, DollarSign, XCircle,
+  ChevronDown, CheckCircle, Activity, User, Phone, MapPin, MoreHorizontal,
+  Stethoscope, CreditCard, Receipt
+} from "lucide-react";
 
+/* ─── Schema ─── */
 const appointmentSchema = z.object({
   patientId: z.coerce.number().min(1, "اختر المريض"),
   branch: z.string().min(1, "الفرع مطلوب"),
@@ -40,21 +42,27 @@ const paymentSchema = z.object({
   note: z.string().optional()
 });
 
-const getStatusBadge = (status: string) => {
-  const map: Record<string, { label: string; className: string }> = {
-    waiting_arrival: { label: "منتظر الوصول", className: "bg-amber-100 text-amber-800 hover:bg-amber-100" },
-    in_reception: { label: "في الاستقبال", className: "bg-blue-100 text-blue-800 hover:bg-blue-100" },
-    in_examination: { label: "في غرفة الكشف", className: "bg-indigo-100 text-indigo-800 hover:bg-indigo-100" },
-    completed: { label: "أنهى الكشف", className: "bg-emerald-100 text-emerald-800 hover:bg-emerald-100" },
-    session_done: { label: "أنهى الجلسة", className: "bg-teal-100 text-teal-800 hover:bg-teal-100" },
-    postponed: { label: "تأجيل الحجز", className: "bg-purple-100 text-purple-800 hover:bg-purple-100" },
-    no_show: { label: "لم يحضر", className: "bg-red-100 text-red-800 hover:bg-red-100" },
-    cancelled: { label: "ملغي", className: "bg-gray-100 text-gray-800 hover:bg-gray-100" },
+/* ─── Helpers ─── */
+const getStatusConfig = (status: string) => {
+  const map: Record<string, { label: string; color: string; bg: string }> = {
+    waiting_arrival: { label: "منتظر الوصول", color: "#FFC857", bg: "rgba(255,200,87,0.1)" },
+    in_reception: { label: "في الاستقبال", color: "#0A6CFF", bg: "rgba(10,108,255,0.1)" },
+    in_examination: { label: "في غرفة الكشف", color: "#8B5CF6", bg: "rgba(139,92,246,0.1)" },
+    completed: { label: "أنهى الكشف", color: "#00D8D8", bg: "rgba(0,217,208,0.1)" },
+    session_done: { label: "أنهى الجلسة", color: "#00D8D8", bg: "rgba(0,217,208,0.1)" },
+    postponed: { label: "تأجيل الحجز", color: "#8EA2BD", bg: "rgba(142,162,189,0.1)" },
+    no_show: { label: "لم يحضر", color: "#FF4D60", bg: "rgba(255,77,96,0.1)" },
+    cancelled: { label: "ملغي", color: "#FF4D60", bg: "rgba(255,77,96,0.1)" },
   };
-  const s = map[status] || { label: status, className: "bg-gray-100 text-gray-800" };
-  return <Badge variant="secondary" className={s.className}>{s.label}</Badge>;
+  return map[status] || { label: status, color: "#8EA2BD", bg: "rgba(142,162,189,0.1)" };
 };
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 15 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+};
+
+/* ─── Main Component ─── */
 export default function Appointments() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -63,8 +71,8 @@ export default function Appointments() {
   const [dateFilter, setDateFilter] = useState<string>(today);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [paymentAppId, setPaymentAppId] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // When navigating from receivables with ?id=xxx, remove date filter and open payment dialog
   useEffect(() => {
     const params = new URLSearchParams(search);
     const deepId = params.get("id");
@@ -74,7 +82,9 @@ export default function Appointments() {
     }
   }, [search]);
 
-  const { data, isLoading } = useListAppointments(dateFilter ? { date: dateFilter } : {});
+  const { data: appointmentsResponse, isLoading } = useListAppointments(dateFilter ? { date: dateFilter } : {});
+  const appointments = appointmentsResponse?.appointments || [];
+  
   const { data: patientsList } = useListPatients({ limit: 100 });
   const { data: servicesList } = useListServices({});
   const { data: branches } = useListBranches();
@@ -149,54 +159,290 @@ export default function Appointments() {
     recordPayment.mutate({ id: paymentAppId, data: values });
   };
 
-  const handleStatusChange = (id: number, status: any) => {
-    updateStatus.mutate({ id, data: { status } });
-  };
+  const filteredAppointments = appointments.filter((app: any) => 
+    !searchTerm || (app.patient && app.patient.nameAr.includes(searchTerm))
+  );
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">الحجوزات</h1>
-        <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              إضافة حجز جديد
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>تسجيل حجز جديد</DialogTitle>
-            </DialogHeader>
+    <div className="min-h-full" dir="rtl">
+      <motion.div initial="hidden" animate="visible" variants={fadeUp} className="space-y-6">
+        
+        {/* ─── Header ─── */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+          <div>
+            <h1
+              className="text-[28px] font-extrabold text-white tracking-tight"
+              style={{ fontFamily: '"Thmanyah Sans", sans-serif' }}
+            >
+              المواعيد والحجوزات
+            </h1>
+            <p className="text-[13px] mt-2 font-medium" style={{ color: "#8EA2BD" }}>
+              إدارة جدول العيادة، الحجوزات، الدفعات المستحقة وتحديث حالة المرضى.
+            </p>
+          </div>
+          <button
+            onClick={() => setIsAddOpen(true)}
+            className="flex items-center justify-center gap-2 h-[42px] px-6 rounded-[10px] text-[13px] font-bold text-white transition-all hover:scale-[1.02]"
+            style={{
+              background: "linear-gradient(135deg, #0A6CFF, #00D8D8)",
+              boxShadow: "0 4px 15px rgba(10,108,255,0.25)",
+            }}
+          >
+            <Plus className="w-4 h-4" /> إضافة حجز جديد
+          </button>
+        </div>
+
+        {/* ─── Search & Date Filter ─── */}
+        <div
+          className="rounded-[14px] p-4 flex flex-col md:flex-row gap-4 items-center justify-between"
+          style={{
+            background: "#050C1F",
+            border: "1px solid rgba(40,130,220,0.16)",
+          }}
+        >
+          <div className="relative w-full md:w-[350px]">
+            <Filter className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8EA2BD]" />
+            <input
+              type="text"
+              placeholder="ابحث باسم المريض..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="h-[40px] w-full rounded-[10px] pr-9 pl-4 text-[12px] text-white outline-none transition-all duration-300"
+              style={{
+                background: "rgba(6,19,41,.6)",
+                border: "1px solid rgba(40,130,220,0.16)",
+              }}
+              onFocus={(e) => (e.target.style.borderColor = "#0A6CFF")}
+              onBlur={(e) => (e.target.style.borderColor = "rgba(40,130,220,0.16)")}
+            />
+          </div>
+          
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <span className="text-[12px] font-bold text-[#8EA2BD]">تاريخ العرض:</span>
+            <input 
+              type="date"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="h-[40px] rounded-[10px] px-4 text-[12px] text-white outline-none transition-all duration-300 w-full md:w-[150px]"
+              style={{
+                background: "rgba(6,19,41,.6)",
+                border: "1px solid rgba(40,130,220,0.16)",
+                colorScheme: "dark"
+              }}
+            />
+            <button
+              onClick={() => setDateFilter("")}
+              className="h-[40px] px-4 rounded-[10px] text-[12px] font-bold text-[#8EA2BD] transition-all hover:bg-[rgba(255,77,96,0.1)] hover:text-[#FF4D60]"
+              style={{ border: "1px solid rgba(40,130,220,0.16)" }}
+            >
+              عرض الكل
+            </button>
+          </div>
+        </div>
+
+        {/* ─── Appointments Table ─── */}
+        {isLoading ? (
+          <div className="flex items-center justify-center py-20 text-[#00D8D8]">
+            <Activity className="w-8 h-8 animate-spin" />
+          </div>
+        ) : (
+          <div
+            className="rounded-[14px] overflow-hidden"
+            style={{
+              background: "#050C1F",
+              border: "1px solid rgba(40,130,220,0.16)",
+            }}
+          >
+            <div className="overflow-x-auto">
+              <table className="w-full text-right border-collapse">
+                <thead>
+                  <tr style={{ background: "rgba(10,108,255,0.04)", borderBottom: "1px solid rgba(40,130,220,0.16)" }}>
+                    <th className="px-5 py-4 text-[11px] font-bold text-[#8EA2BD]">الوقت والتاريخ</th>
+                    <th className="px-5 py-4 text-[11px] font-bold text-[#8EA2BD]">المريض</th>
+                    <th className="px-5 py-4 text-[11px] font-bold text-[#8EA2BD]">الطبيب</th>
+                    <th className="px-5 py-4 text-[11px] font-bold text-[#8EA2BD]">الفرع</th>
+                    <th className="px-5 py-4 text-[11px] font-bold text-[#8EA2BD]">الخدمة والمبلغ</th>
+                    <th className="px-5 py-4 text-[11px] font-bold text-[#8EA2BD]">حالة الحجز</th>
+                    <th className="px-5 py-4 text-[11px] font-bold text-[#8EA2BD] text-center">إجراءات</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y" style={{ borderColor: "rgba(40,130,220,0.08)" }}>
+                  {filteredAppointments.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="text-center py-12 text-[#8EA2BD] text-[13px]">
+                        لا توجد حجوزات مطابقة للبحث أو التاريخ
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredAppointments.map((app: any) => {
+                      const cfg = getStatusConfig(app.status);
+                      return (
+                        <tr key={app.id} className="transition-colors hover:bg-[rgba(10,108,255,0.02)]">
+                          
+                          {/* Time & Date */}
+                          <td className="px-5 py-4">
+                            <div className="flex flex-col gap-1.5">
+                              <span className="flex items-center gap-1.5 text-[14px] font-bold text-[#00D8D8]" dir="ltr">
+                                <Clock className="w-3.5 h-3.5" />
+                                {app.appointmentTime.substring(0, 5)}
+                              </span>
+                              <span className="flex items-center gap-1.5 text-[11px] text-[#8EA2BD]" dir="ltr">
+                                <CalendarIcon className="w-3.5 h-3.5" />
+                                {app.appointmentDate}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* Patient */}
+                          <td className="px-5 py-4">
+                            <div className="flex items-center gap-3">
+                              <span
+                                className="flex h-9 w-9 items-center justify-center rounded-full text-[12px] font-bold text-white shrink-0"
+                                style={{ background: "linear-gradient(135deg, #0A6CFF, #00D8D8)" }}
+                              >
+                                {app.patient?.nameAr?.charAt(0) || <User className="w-4 h-4"/>}
+                              </span>
+                              <div>
+                                <p className="text-[13px] font-bold text-white">{app.patient?.nameAr}</p>
+                                <p className="text-[11px] text-[#8EA2BD] mt-0.5">{app.patient?.localCode}</p>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Doctor */}
+                          <td className="px-5 py-4">
+                            {app.doctor ? (
+                              <div className="flex items-center gap-2 text-[12px] text-white">
+                                <Stethoscope className="w-3.5 h-3.5 text-[#0A6CFF]" />
+                                د. {app.doctor.name}
+                              </div>
+                            ) : (
+                              <span className="text-[11px] text-[#8EA2BD]">غير محدد</span>
+                            )}
+                          </td>
+
+                          {/* Branch */}
+                          <td className="px-5 py-4">
+                            <div className="flex items-center gap-2 text-[12px] text-white">
+                              <MapPin className="w-3.5 h-3.5 text-[#8EA2BD]" />
+                              {app.branch}
+                            </div>
+                          </td>
+
+                          {/* Financials */}
+                          <td className="px-5 py-4">
+                            <div className="flex flex-col gap-1">
+                              <span className="text-[12px] font-bold text-white">
+                                {app.services && app.services.length > 0 
+                                  ? app.services.map((s:any) => s.service?.nameAr).join(', ')
+                                  : "كشف عام"}
+                              </span>
+                              <div className="flex items-center gap-2 text-[11px]">
+                                <span className="text-[#00D8D8] font-bold">${app.totalAmount} مطلوب</span>
+                                <span className="text-[#8EA2BD]">/</span>
+                                <span className="text-[#0A6CFF] font-bold">${app.paidAmount} مدفوع</span>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Status */}
+                          <td className="px-5 py-4">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button
+                                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-[6px] text-[11px] font-bold transition-all hover:brightness-110 border"
+                                  style={{ background: cfg.bg, color: cfg.color, borderColor: cfg.color + '40' }}
+                                >
+                                  {cfg.label}
+                                  <ChevronDown className="w-3 h-3 ml-1" />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-40 border-[rgba(40,130,220,0.16)] bg-[#050C1F] text-white">
+                                <DropdownMenuItem onClick={() => handleStatusChange(app.id, 'in_reception')} className="text-[11px] hover:bg-[rgba(10,108,255,0.1)] focus:bg-[rgba(10,108,255,0.1)] focus:text-white">في الاستقبال</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleStatusChange(app.id, 'in_examination')} className="text-[11px] hover:bg-[rgba(139,92,246,0.1)] focus:bg-[rgba(139,92,246,0.1)] focus:text-white">في غرفة الكشف</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleStatusChange(app.id, 'completed')} className="text-[11px] hover:bg-[rgba(0,217,208,0.1)] focus:bg-[rgba(0,217,208,0.1)] focus:text-white">أنهى الكشف</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleStatusChange(app.id, 'no_show')} className="text-[11px] hover:bg-[rgba(255,77,96,0.1)] text-[#FF4D60] focus:bg-[rgba(255,77,96,0.1)] focus:text-[#FF4D60]">لم يحضر</DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </td>
+
+                          {/* Actions */}
+                          <td className="px-5 py-4">
+                            <div className="flex items-center justify-center gap-1">
+                              <button
+                                onClick={() => setPaymentAppId(app.id)}
+                                className="h-8 w-8 rounded-md flex items-center justify-center transition-colors hover:bg-[rgba(0,217,208,0.1)] text-[#8EA2BD] hover:text-[#00D8D8]"
+                                title="تحصيل دفعة"
+                              >
+                                <DollarSign className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => cancelAppointment.mutate({ id: app.id, data: { reason: "طلب من المريض" }})}
+                                className="h-8 w-8 rounded-md flex items-center justify-center transition-colors hover:bg-[rgba(255,77,96,0.1)] text-[#8EA2BD] hover:text-[#FF4D60]"
+                                title="إلغاء الموعد"
+                              >
+                                <XCircle className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </motion.div>
+
+      {/* ─── Add Appointment Dialog ─── */}
+      <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+        <DialogContent className="sm:max-w-[600px] border-[rgba(40,130,220,0.2)] bg-[#050C1F] p-0 overflow-hidden shadow-[0_0_40px_rgba(0,0,0,0.5)]">
+          <div className="bg-gradient-to-l from-[#0A6CFF] to-[#00D8D8] px-6 py-4 flex items-center justify-between">
+            <DialogTitle className="text-white font-extrabold text-[16px]">تسجيل حجز جديد</DialogTitle>
+          </div>
+          <div className="p-6">
             <Form {...addForm}>
-              <form onSubmit={addForm.handleSubmit(onAddSubmit)} className="space-y-4 pt-2">
+              <form onSubmit={addForm.handleSubmit(onAddSubmit)} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  
                   <FormField control={addForm.control} name="patientId" render={({ field }) => (
                     <FormItem className="md:col-span-2">
-                      <FormLabel>المريض *</FormLabel>
+                      <FormLabel className="text-[#8EA2BD] text-[12px] font-bold">المريض *</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value?.toString() || ""}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="اختر المريض..." /></SelectTrigger></FormControl>
-                        <SelectContent>
-                          {patientsList?.patients?.map(p => (
-                            <SelectItem key={p.id} value={p.id.toString()}>{p.nameAr} - {p.localCode}</SelectItem>
+                        <FormControl>
+                          <SelectTrigger className="bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] h-[40px]">
+                            <SelectValue placeholder="ابحث أو اختر المريض..." />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="bg-[#061329] border-[rgba(40,130,220,0.16)] text-white">
+                          {patientsList?.patients?.map((p: any) => (
+                            <SelectItem key={p.id} value={p.id.toString()} className="text-[12px] hover:bg-[rgba(10,108,255,0.1)] focus:bg-[rgba(10,108,255,0.1)]">
+                              {p.nameAr} - {p.localCode}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                      <FormMessage />
+                      <FormMessage className="text-[#FF4D60] text-[10px]" />
                     </FormItem>
                   )} />
 
                   <FormField control={addForm.control} name="branch" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>الفرع *</FormLabel>
+                      <FormLabel className="text-[#8EA2BD] text-[12px] font-bold">الفرع *</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                        <SelectContent>
-                          {Array.isArray(branches) && branches.map(b => <SelectItem key={b.id} value={b.name}>{b.name}</SelectItem>)}
+                        <FormControl>
+                          <SelectTrigger className="bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] h-[40px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="bg-[#061329] border-[rgba(40,130,220,0.16)] text-white">
+                          {Array.isArray(branches) && branches.map((b:any) => <SelectItem key={b.id} value={b.name} className="text-[12px]">{b.name}</SelectItem>)}
                           {!branches && (
                             <>
-                              <SelectItem value="غزة">فرع غزة</SelectItem>
-                              <SelectItem value="خان يونس">فرع خان يونس</SelectItem>
+                              <SelectItem value="غزة" className="text-[12px]">فرع غزة</SelectItem>
+                              <SelectItem value="خان يونس" className="text-[12px]">فرع خان يونس</SelectItem>
                             </>
                           )}
                         </SelectContent>
@@ -204,270 +450,105 @@ export default function Appointments() {
                     </FormItem>
                   )} />
 
-                  <div className="hidden md:block"></div>
+                  <FormField control={addForm.control} name="doctorId" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-[#8EA2BD] text-[12px] font-bold">الطبيب (اختياري)</FormLabel>
+                      <Input type="number" {...field} value={field.value || ""} onChange={e => field.onChange(parseInt(e.target.value) || null)} 
+                        className="bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] h-[40px]" 
+                      />
+                    </FormItem>
+                  )} />
 
                   <FormField control={addForm.control} name="appointmentDate" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>تاريخ الحجز *</FormLabel>
-                      <FormControl><Input type="date" {...field} /></FormControl>
-                      <FormMessage />
+                      <FormLabel className="text-[#8EA2BD] text-[12px] font-bold">تاريخ الحجز *</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} className="bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] h-[40px]" style={{ colorScheme: "dark" }} />
+                      </FormControl>
+                      <FormMessage className="text-[#FF4D60] text-[10px]" />
                     </FormItem>
                   )} />
 
                   <FormField control={addForm.control} name="appointmentTime" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>وقت الحجز *</FormLabel>
-                      <FormControl><Input type="time" {...field} /></FormControl>
-                      <FormMessage />
+                      <FormLabel className="text-[#8EA2BD] text-[12px] font-bold">وقت الحجز *</FormLabel>
+                      <FormControl>
+                        <Input type="time" {...field} className="bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] h-[40px]" style={{ colorScheme: "dark" }} />
+                      </FormControl>
+                      <FormMessage className="text-[#FF4D60] text-[10px]" />
                     </FormItem>
                   )} />
 
-                  <FormField control={addForm.control} name="source" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>مصدر الحجز</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                        <SelectContent>
-                          <SelectItem value="walk_in">زيارة مباشرة</SelectItem>
-                          <SelectItem value="phone">هاتف</SelectItem>
-                          <SelectItem value="social_media">تواصل اجتماعي</SelectItem>
-                          <SelectItem value="website">الموقع الإلكتروني</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormItem>
-                  )} />
-
-                  <FormField control={addForm.control} name="paymentMethod" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>طريقة الدفع المتوقعة</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                        <SelectContent>
-                          <SelectItem value="cash">نقدي</SelectItem>
-                          <SelectItem value="credit_card">بطاقة ائتمان</SelectItem>
-                          <SelectItem value="check">شيك</SelectItem>
-                          <SelectItem value="bank_transfer">تحويل بنكي</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormItem>
-                  )} />
-
-                  <FormField control={addForm.control} name="serviceIds" render={({ field }) => (
-                    <FormItem className="md:col-span-2">
-                      <FormLabel>الخدمات المطلوبة</FormLabel>
-                      <Select 
-                        onValueChange={(val) => {
-                          const current = field.value || [];
-                          const id = parseInt(val);
-                          if (!current.includes(id)) {
-                            field.onChange([...current, id]);
-                          }
-                        }}
-                      >
-                        <FormControl><SelectTrigger><SelectValue placeholder="اختر الخدمات..." /></SelectTrigger></FormControl>
-                        <SelectContent>
-                          {Array.isArray(servicesList) && servicesList.map(s => <SelectItem key={s.id} value={s.id.toString()}>{s.name} (₪{s.price})</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {field.value?.map(id => {
-                          const service = servicesList?.find(s => s.id === id);
-                          return service ? (
-                            <Badge key={id} variant="secondary" className="gap-1 px-2 py-1">
-                              {service.name}
-                              <button type="button" onClick={() => field.onChange(field.value?.filter(i => i !== id))} className="text-muted-foreground hover:text-red-500">
-                                <XCircle className="h-3 w-3" />
-                              </button>
-                            </Badge>
-                          ) : null;
-                        })}
-                      </div>
-                    </FormItem>
-                  )} />
-
-                  <FormField control={addForm.control} name="notes" render={({ field }) => (
-                    <FormItem className="md:col-span-2">
-                      <FormLabel>ملاحظات الاستقبال</FormLabel>
-                      <FormControl><Input {...field} /></FormControl>
-                    </FormItem>
-                  )} />
                 </div>
 
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button type="button" variant="outline" onClick={() => setIsAddOpen(false)}>إلغاء</Button>
-                  <Button type="submit" disabled={createAppointment.isPending}>تأكيد الحجز</Button>
+                <div className="pt-4 flex justify-end gap-3 border-t border-[rgba(40,130,220,0.16)] mt-6">
+                  <Button type="button" variant="ghost" onClick={() => setIsAddOpen(false)} className="text-[#8EA2BD] hover:text-white hover:bg-[rgba(255,255,255,0.05)] text-[12px] h-[38px] px-5">
+                    إلغاء
+                  </Button>
+                  <Button type="submit" disabled={createAppointment.isPending} className="bg-gradient-to-r from-[#0A6CFF] to-[#00D8D8] text-white text-[12px] h-[38px] px-6 font-bold hover:brightness-110 border-0">
+                    {createAppointment.isPending ? "جاري الحفظ..." : "تأكيد الحجز"}
+                  </Button>
                 </div>
               </form>
             </Form>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      <Card>
-        <CardHeader className="pb-4">
-          <div className="flex gap-2 items-center">
-            <div className="relative max-w-[200px]">
-              <Input 
-                type="date" 
-                value={dateFilter} 
-                onChange={(e) => setDateFilter(e.target.value)} 
-                className="pl-9"
-              />
-              <CalendarIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
-            </div>
-            <Button variant="outline" onClick={() => setDateFilter(today)}>اليوم</Button>
           </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader className="bg-secondary/20">
-              <TableRow>
-                <TableHead className="w-12">#</TableHead>
-                <TableHead>المريض</TableHead>
-                <TableHead>الخدمات</TableHead>
-                <TableHead>الوقت</TableHead>
-                <TableHead>الحالة</TableHead>
-                <TableHead>الرسوم</TableHead>
-                <TableHead className="text-left">إجراءات</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell><Skeleton className="h-4 w-4" /></TableCell>
-                    <TableCell><Skeleton className="h-8 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                    <TableCell><Skeleton className="h-10 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-8 w-32 ml-auto" /></TableCell>
-                  </TableRow>
-                ))
-              ) : data?.appointments?.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center h-32 text-muted-foreground">
-                    <CalendarIcon className="h-8 w-8 mx-auto mb-2 text-muted-foreground/30" />
-                    لا يوجد حجوزات لهذا اليوم
-                  </TableCell>
-                </TableRow>
-              ) : (
-                data?.appointments?.map((app, index) => (
-                  <TableRow key={app.id}>
-                    <TableCell>{index + 1}</TableCell>
-                    <TableCell>
-                      <div className="font-medium text-primary-foreground/90">{app.patientNameAr}</div>
-                      <div className="text-xs text-muted-foreground font-mono flex items-center gap-1 mt-0.5">
-                        <User className="h-3 w-3" /> {app.patientCode}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="max-w-[200px] truncate text-sm" title={app.serviceNames?.join("، ") || "لم يحدد"}>
-                        {app.serviceNames?.join("، ") || <span className="text-muted-foreground">-</span>}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1.5 font-medium">
-                        <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span dir="ltr">{app.appointmentTime}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 px-2 flex gap-1 bg-transparent hover:bg-secondary/50">
-                            {getStatusBadge(app.status)}
-                            <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          <DropdownMenuItem onClick={() => handleStatusChange(app.id, 'waiting_arrival')}>منتظر الوصول</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleStatusChange(app.id, 'in_reception')}>في الاستقبال</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleStatusChange(app.id, 'in_examination')}>في غرفة الكشف</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleStatusChange(app.id, 'completed')}>أنهى الكشف</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleStatusChange(app.id, 'postponed')}>تأجيل الحجز</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleStatusChange(app.id, 'no_show')}>لم يحضر</DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600" onClick={() => cancelAppointment.mutate({ id: app.id })}>إلغاء الحجز</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm font-bold font-mono tracking-tight" dir="ltr">₪ {app.totalFee}</div>
-                      <div className="flex flex-col gap-0.5 mt-1">
-                        <div className="text-[10px] text-emerald-600 flex items-center gap-1">
-                          <CheckCircle className="h-2.5 w-2.5" /> مدفوع: {app.paidAmount}
-                        </div>
-                        {app.remainingAmount > 0 && (
-                          <div className="text-[10px] text-red-500 flex items-center gap-1">
-                            <Activity className="h-2.5 w-2.5" /> متبقي: {app.remainingAmount}
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-2">
-                        {app.remainingAmount > 0 && (
-                          <Dialog open={paymentAppId === app.id} onOpenChange={(open) => {
-                            if (open) {
-                              setPaymentAppId(app.id);
-                              paymentForm.reset({ amount: app.remainingAmount, paymentMethod: "cash", note: "" });
-                            } else {
-                              setPaymentAppId(null);
-                            }
-                          }}>
-                            <DialogTrigger asChild>
-                              <Button size="sm" variant="outline" className="h-8 text-emerald-700 border-emerald-200 bg-emerald-50 hover:bg-emerald-100 hover:text-emerald-800">
-                                <DollarSign className="h-3 w-3 ml-1" /> دفع
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>تسجيل دفعة نقدية</DialogTitle>
-                              </DialogHeader>
-                              <Form {...paymentForm}>
-                                <form onSubmit={paymentForm.handleSubmit(onPaymentSubmit)} className="space-y-4 pt-2">
-                                  <div className="p-3 bg-secondary/20 rounded-md mb-4 flex justify-between items-center">
-                                    <span className="text-sm font-medium">المبلغ المتبقي:</span>
-                                    <span className="text-lg font-bold text-red-600 font-mono" dir="ltr">₪ {app.remainingAmount}</span>
-                                  </div>
-                                  <FormField control={paymentForm.control} name="amount" render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>المبلغ المدفوع (₪) *</FormLabel>
-                                      <FormControl><Input type="number" step="any" max={app.remainingAmount} {...field} /></FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )} />
-                                  <FormField control={paymentForm.control} name="paymentMethod" render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>طريقة الدفع</FormLabel>
-                                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                                        <SelectContent>
-                                          <SelectItem value="cash">نقدي</SelectItem>
-                                          <SelectItem value="credit_card">بطاقة ائتمان</SelectItem>
-                                          <SelectItem value="bank_transfer">تحويل بنكي</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </FormItem>
-                                  )} />
-                                  <div className="flex justify-end gap-2 pt-4">
-                                    <Button type="button" variant="outline" onClick={() => setPaymentAppId(null)}>إلغاء</Button>
-                                    <Button type="submit" disabled={recordPayment.isPending}>تأكيد الدفع</Button>
-                                  </div>
-                                </form>
-                              </Form>
-                            </DialogContent>
-                          </Dialog>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Payment Dialog ─── */}
+      <Dialog open={!!paymentAppId} onOpenChange={(o) => !o && setPaymentAppId(null)}>
+        <DialogContent className="sm:max-w-[400px] border-[rgba(0,217,208,0.3)] bg-[#050C1F] p-0 overflow-hidden shadow-[0_0_40px_rgba(0,217,208,0.15)]">
+          <div className="bg-[rgba(0,217,208,0.1)] border-b border-[rgba(0,217,208,0.2)] px-6 py-4 flex items-center gap-3">
+            <div className="bg-[#00D8D8] rounded-full p-1.5 text-[#050C1F]">
+              <Receipt className="w-4 h-4" />
+            </div>
+            <DialogTitle className="text-white font-extrabold text-[15px]">تحصيل دفعة مالية</DialogTitle>
+          </div>
+          <div className="p-6">
+            <Form {...paymentForm}>
+              <form onSubmit={paymentForm.handleSubmit(onPaymentSubmit)} className="space-y-4">
+                <FormField control={paymentForm.control} name="amount" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-[#8EA2BD] text-[12px] font-bold">المبلغ (USD) *</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.01" {...field} className="bg-[rgba(6,19,41,0.6)] border-[rgba(0,217,208,0.2)] text-white text-[16px] font-bold h-[48px] text-center" dir="ltr" />
+                    </FormControl>
+                    <FormMessage className="text-[#FF4D60] text-[10px]" />
+                  </FormItem>
+                )} />
+
+                <FormField control={paymentForm.control} name="paymentMethod" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-[#8EA2BD] text-[12px] font-bold">طريقة الدفع *</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] h-[40px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-[#061329] border-[rgba(40,130,220,0.16)] text-white">
+                        <SelectItem value="cash" className="text-[12px]">نقدي (Cash)</SelectItem>
+                        <SelectItem value="credit_card" className="text-[12px]">بطاقة ائتمان</SelectItem>
+                        <SelectItem value="bank_transfer" className="text-[12px]">حوالة بنكية</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )} />
+
+                <div className="pt-4 flex justify-end gap-3 border-t border-[rgba(40,130,220,0.16)] mt-6">
+                  <Button type="button" variant="ghost" onClick={() => setPaymentAppId(null)} className="text-[#8EA2BD] hover:text-white hover:bg-[rgba(255,255,255,0.05)] text-[12px] h-[38px] px-5">
+                    إلغاء
+                  </Button>
+                  <Button type="submit" disabled={recordPayment.isPending} className="bg-[#00D8D8] text-[#050C1F] text-[12px] h-[38px] px-6 font-bold hover:brightness-110 border-0">
+                    {recordPayment.isPending ? "جاري الدفع..." : "تأكيد الدفع"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </div>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }

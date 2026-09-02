@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { supabase } from "../lib/supabase";
+import { tenantSupabase } from "../lib/tenant-supabase";
 
 const router = Router();
 
@@ -11,7 +11,7 @@ router.get("/appointments", async (req, res) => {
     const offset = (pageNum - 1) * limitNum;
     const today = new Date().toISOString().split("T")[0];
 
-    let query = supabase.from("appointments").select("*", { count: "exact" });
+    let query = tenantSupabase(req).from("appointments").select("*", { count: "exact" });
     if (date) query = query.eq("appointment_date", date);
     else if (dateFrom || dateTo) {
       if (dateFrom) query = query.gte("appointment_date", dateFrom);
@@ -27,10 +27,10 @@ router.get("/appointments", async (req, res) => {
 
     const enriched = await Promise.all((rows ?? []).map(async (a) => {
       const [{ data: patients }, { data: paymentsData }, { data: svcs }] = await Promise.all([
-        supabase.from("patients").select("name_ar, local_code").eq("id", a.patient_id).single(),
-        supabase.from("payments").select("amount").eq("appointment_id", a.id),
+        tenantSupabase(req).from("patients").select("name_ar, local_code").eq("id", a.patient_id).single(),
+        tenantSupabase(req).from("payments").select("amount").eq("appointment_id", a.id),
         (a.service_ids as number[] ?? []).length > 0
-          ? supabase.from("services").select("name").in("id", a.service_ids as number[])
+          ? tenantSupabase(req).from("services").select("name").in("id", a.service_ids as number[])
           : Promise.resolve({ data: [] }),
       ]);
       const paid = (paymentsData ?? []).reduce((s: number, p: any) => s + parseFloat(p.amount ?? "0"), 0);
@@ -74,11 +74,11 @@ router.post("/appointments", async (req, res) => {
     const serviceIds: number[] = data.serviceIds ?? [];
     let totalFee = 0;
     if (serviceIds.length > 0) {
-      const { data: svcs } = await supabase.from("services").select("patient_fee").in("id", serviceIds);
+      const { data: svcs } = await tenantSupabase(req).from("services").select("patient_fee").in("id", serviceIds);
       totalFee = (svcs ?? []).reduce((s: number, sv: any) => s + parseFloat(sv.patient_fee ?? "0"), 0);
     }
 
-    const { data: appt, error } = await supabase.from("appointments").insert({
+    const { data: appt, error } = await tenantSupabase(req).from("appointments").insert({
       patient_id: data.patientId,
       branch: data.branch,
       appointment_date: data.appointmentDate,
@@ -94,7 +94,7 @@ router.post("/appointments", async (req, res) => {
     }).select().single();
     if (error) throw error;
 
-    const { data: patient } = await supabase.from("patients").select("name_ar, local_code").eq("id", appt.patient_id).single();
+    const { data: patient } = await tenantSupabase(req).from("patients").select("name_ar, local_code").eq("id", appt.patient_id).single();
     res.status(201).json({
       ...appt,
       patientNameAr: (patient as any)?.name_ar ?? "",
@@ -113,9 +113,9 @@ router.post("/appointments", async (req, res) => {
 router.get("/appointments/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { data: a, error } = await supabase.from("appointments").select("*").eq("id", id).single();
+    const { data: a, error } = await tenantSupabase(req).from("appointments").select("*").eq("id", id).single();
     if (error || !a) return res.status(404).json({ error: "Not found" });
-    const { data: patient } = await supabase.from("patients").select("name_ar, local_code").eq("id", a.patient_id).single();
+    const { data: patient } = await tenantSupabase(req).from("patients").select("name_ar, local_code").eq("id", a.patient_id).single();
     res.json({
       ...a,
       patientNameAr: (patient as any)?.name_ar ?? "",
@@ -143,7 +143,7 @@ router.patch("/appointments/:id", async (req, res) => {
     if (data.serviceIds !== undefined) updates.service_ids = data.serviceIds;
     if (data.doctorId !== undefined) updates.doctor_id = data.doctorId;
     if (data.notes !== undefined) updates.notes = data.notes;
-    const { data: updated, error } = await supabase.from("appointments").update(updates).eq("id", id).select().single();
+    const { data: updated, error } = await tenantSupabase(req).from("appointments").update(updates).eq("id", id).select().single();
     if (error) throw error;
     res.json(updated);
   } catch (err) {
@@ -155,7 +155,7 @@ router.patch("/appointments/:id", async (req, res) => {
 router.delete("/appointments/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { error } = await supabase.from("appointments").update({ status: "cancelled", updated_at: new Date().toISOString() }).eq("id", id);
+    const { error } = await tenantSupabase(req).from("appointments").update({ status: "cancelled", updated_at: new Date().toISOString() }).eq("id", id);
     if (error) throw error;
     res.json({ success: true, message: "Appointment cancelled" });
   } catch (err) {
@@ -168,13 +168,13 @@ router.patch("/appointments/:id/status", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const { status } = req.body;
-    const { data: updated, error } = await supabase.from("appointments").update({ status, updated_at: new Date().toISOString() }).eq("id", id).select().single();
+    const { data: updated, error } = await tenantSupabase(req).from("appointments").update({ status, updated_at: new Date().toISOString() }).eq("id", id).select().single();
     if (error || !updated) return res.status(404).json({ error: "Not found" });
 
     if (status === "completed" || status === "session_done") {
-      const { data: existing } = await supabase.from("visits").select("id").eq("appointment_id", id).limit(1);
+      const { data: existing } = await tenantSupabase(req).from("visits").select("id").eq("appointment_id", id).limit(1);
       if (!existing || existing.length === 0) {
-        await supabase.from("visits").insert({
+        await tenantSupabase(req).from("visits").insert({
           patient_id: updated.patient_id,
           appointment_id: id,
           visit_date: updated.appointment_date,
@@ -195,7 +195,7 @@ router.post("/appointments/:id/payment", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const { amount, paymentMethod, note } = req.body;
-    const { data: payment, error } = await supabase.from("payments").insert({
+    const { data: payment, error } = await tenantSupabase(req).from("payments").insert({
       appointment_id: id,
       amount: amount.toString(),
       payment_method: paymentMethod ?? "cash",
@@ -203,9 +203,9 @@ router.post("/appointments/:id/payment", async (req, res) => {
     }).select().single();
     if (error) throw error;
 
-    const { data: allPayments } = await supabase.from("payments").select("amount").eq("appointment_id", id);
+    const { data: allPayments } = await tenantSupabase(req).from("payments").select("amount").eq("appointment_id", id);
     const totalPaid = (allPayments ?? []).reduce((s: number, p: any) => s + parseFloat(p.amount ?? "0"), 0);
-    await supabase.from("appointments").update({ paid_amount: totalPaid.toString(), updated_at: new Date().toISOString() }).eq("id", id);
+    await tenantSupabase(req).from("appointments").update({ paid_amount: totalPaid.toString(), updated_at: new Date().toISOString() }).eq("id", id);
 
     res.status(201).json(payment);
   } catch (err) {

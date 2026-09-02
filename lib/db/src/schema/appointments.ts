@@ -1,9 +1,10 @@
-import { pgTable, serial, integer, text, timestamp, numeric, jsonb, date, time } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, timestamp, numeric, jsonb, date } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
 export const appointmentsTable = pgTable("appointments", {
   id: serial("id").primaryKey(),
+  clinicId: integer("clinic_id").notNull().default(1),
   patientId: integer("patient_id").notNull(),
   branch: text("branch").notNull(),
   appointmentDate: date("appointment_date").notNull(),
@@ -23,6 +24,7 @@ export const appointmentsTable = pgTable("appointments", {
 
 export const paymentsTable = pgTable("payments", {
   id: serial("id").primaryKey(),
+  clinicId: integer("clinic_id").notNull().default(1),
   appointmentId: integer("appointment_id").notNull(),
   amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
   paymentMethod: text("payment_method").notNull().default("cash"),
@@ -32,6 +34,7 @@ export const paymentsTable = pgTable("payments", {
 
 export const visitsTable = pgTable("visits", {
   id: serial("id").primaryKey(),
+  clinicId: integer("clinic_id").notNull().default(1),
   patientId: integer("patient_id").notNull(),
   appointmentId: integer("appointment_id"),
   visitDate: date("visit_date").notNull(),

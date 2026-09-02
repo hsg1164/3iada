@@ -7,4 +7,6 @@ export * from "./templates";
 export * from "./users";
 export * from "./settings";
 export * from "./tasks";
+export * from "./clinics";
+
 export * from "./staff";

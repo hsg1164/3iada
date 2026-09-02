@@ -1,7 +1,9 @@
 import { pgTable, serial, text, boolean, integer, numeric, timestamp } from "drizzle-orm/pg-core";
+import { clinicsTable } from "./clinics";
 
 export const branchesTable = pgTable("branches", {
   id: serial("id").primaryKey(),
+  clinicId: integer("clinic_id").notNull().default(1).references(() => clinicsTable.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   nameEn: text("name_en"),
   isActive: boolean("is_active").notNull().default(true),
@@ -10,6 +12,7 @@ export const branchesTable = pgTable("branches", {
 
 export const referralProvidersTable = pgTable("referral_providers", {
   id: serial("id").primaryKey(),
+  clinicId: integer("clinic_id").notNull().default(1).references(() => clinicsTable.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   specialty: text("specialty"),
   phone: text("phone"),
@@ -19,6 +22,7 @@ export const referralProvidersTable = pgTable("referral_providers", {
 
 export const taxSettingsTable = pgTable("tax_settings", {
   id: serial("id").primaryKey(),
+  clinicId: integer("clinic_id").notNull().default(1).references(() => clinicsTable.id, { onDelete: "cascade" }),
   branch: text("branch").notNull().default("all"),
   taxType: text("tax_type").notNull().default("on_request"),
   taxTitle: text("tax_title").notNull().default("ضريبة القيمة المضافة"),
@@ -28,6 +32,7 @@ export const taxSettingsTable = pgTable("tax_settings", {
 
 export const systemSettingsTable = pgTable("system_settings", {
   id: serial("id").primaryKey(),
+  clinicId: integer("clinic_id").notNull().default(1).references(() => clinicsTable.id, { onDelete: "cascade" }).unique(),
   activeBranch: text("active_branch").notNull().default("غزة"),
   appointmentOrder: text("appointment_order").notNull().default("by_time"),
   autoRefreshMinutes: integer("auto_refresh_minutes").notNull().default(10),
@@ -37,6 +42,7 @@ export const systemSettingsTable = pgTable("system_settings", {
 
 export const workingDaysTable = pgTable("working_days", {
   id: serial("id").primaryKey(),
+  clinicId: integer("clinic_id").notNull().default(1).references(() => clinicsTable.id, { onDelete: "cascade" }),
   branch: text("branch").notNull(),
   dayOfWeek: integer("day_of_week").notNull(), // 0=Sun, 1=Mon, ..., 6=Sat
   isWorking: boolean("is_working").notNull().default(true),
@@ -46,6 +52,7 @@ export const workingDaysTable = pgTable("working_days", {
 
 export const holidaysTable = pgTable("holidays", {
   id: serial("id").primaryKey(),
+  clinicId: integer("clinic_id").notNull().default(1).references(() => clinicsTable.id, { onDelete: "cascade" }),
   branch: text("branch"), // null = all branches
   date: text("date").notNull(), // YYYY-MM-DD
   title: text("title").notNull(),

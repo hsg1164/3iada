@@ -2,9 +2,12 @@ import { pgTable, serial, text, integer, boolean, timestamp, jsonb, numeric, dat
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
+import { clinicsTable } from "./clinics";
+
 export const patientsTable = pgTable("patients", {
   id: serial("id").primaryKey(),
-  localCode: integer("local_code").notNull().unique(),
+  clinicId: integer("clinic_id").notNull().default(1).references(() => clinicsTable.id, { onDelete: "cascade" }),
+  localCode: integer("local_code").notNull(),
   nameAr: text("name_ar").notNull(),
   nameEn: text("name_en"),
   gender: text("gender").notNull(),

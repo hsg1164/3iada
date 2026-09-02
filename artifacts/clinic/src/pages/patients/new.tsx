@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { 
@@ -9,35 +9,16 @@ import {
   useListReferralProviders 
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Separator } from "@/components/ui/separator";
-import { ArrowRight, Plus, Trash2, User, Phone, FileText, BookUser, MessageSquare, Eye, UserPlus } from "lucide-react";
+import { ArrowRight, Plus, Trash2, User, Phone, MapPin, Briefcase, FileText, Share2, Activity, UserPlus } from "lucide-react";
 
-const phoneOwnerOptions = ["شخصي", "الأب", "الأم", "الزوج/الزوجة", "الابن/الابنة", "أخ/أخت", "أخرى"];
-const maritalOptions = ["أعزب/عزباء", "متزوج/متزوجة", "مطلق/مطلقة", "أرمل/أرملة", "غير محدد"];
-const insuranceOptions = ["بدون تأمين", "تأمين حكومي", "تأمين وكالة", "تأمين خاص", "تأمين نقابة", "أخرى"];
-const referralOptions = ["مباشر", "طبيب آخر", "صيدلية", "مستشفى", "مختبر", "أخرى"];
-const sourceOptions = ["زيارة سابقة", "فيسبوك", "انستغرام", "جوجل", "صديق/قريب", "إعلان", "أخرى"];
-
-const governorateList = ["غزة", "شمال غزة", "الوسطى", "خانيونس", "رفح", "القدس", "الضفة الغربية", "أخرى"];
-const governorateCities: Record<string, string[]> = {
-  "غزة": ["مدينة غزة"],
-  "شمال غزة": ["جباليا", "بيت لاهيا", "بيت حانون"],
-  "الوسطى": ["دير البلح", "النصيرات", "البريج", "المغازي", "الزوايدة"],
-  "خانيونس": ["مدينة خانيونس", "القرارة", "بني سهيلا", "عبسان", "خزاعة"],
-  "رفح": ["مدينة رفح", "تل السلطان", "الشابورة"],
-  "القدس": ["القدس الشرقية", "ضواحي القدس"],
-  "الضفة الغربية": ["رام الله", "نابلس", "الخليل", "بيت لحم", "جنين", "طولكرم", "قلقيلية", "أريحا"],
-};
-const gazaNeighborhoods = ["الرمال", "تل الهوا", "الشيخ رضوان", "النصر", "الشجاعية", "الزيتون", "الدرج", "التفاح", "الشيخ عجلين", "الصبرة"];
-
+/* ─── Schema ─── */
 const patientSchema = z.object({
   localCode: z.coerce.number().optional(),
   nameAr: z.string().min(2, "الاسم مطلوب"),
@@ -65,6 +46,18 @@ const patientSchema = z.object({
   notes: z.string().optional()
 });
 
+/* ─── Lists ─── */
+const phoneOwnerOptions = ["شخصي", "الأب", "الأم", "الزوج/الزوجة", "الابن/الابنة", "أخ/أخت", "أخرى"];
+const maritalOptions = ["أعزب/عزباء", "متزوج/متزوجة", "مطلق/مطلقة", "أرمل/أرملة", "غير محدد"];
+const insuranceOptions = ["بدون تأمين", "تأمين حكومي", "تأمين وكالة", "تأمين خاص", "تأمين نقابة", "أخرى"];
+const sourceOptions = ["زيارة سابقة", "فيسبوك", "انستغرام", "جوجل", "صديق/قريب", "إعلان", "أخرى"];
+const governorateList = ["غزة", "شمال غزة", "الوسطى", "خانيونس", "رفح", "القدس", "الضفة الغربية", "أخرى"];
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 15 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+};
+
 export default function NewPatient() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -90,7 +83,7 @@ export default function NewPatient() {
     resolver: zodResolver(patientSchema),
     defaultValues: {
       gender: "male",
-      phones: [{ number: "", owner: "" }],
+      phones: [{ number: "", owner: "شخصي" }],
       nameAr: "",
       nameEn: "",
       dateOfBirth: "",
@@ -108,301 +101,299 @@ export default function NewPatient() {
     }
   });
 
-  // Set default code when loaded
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "phones"
+  });
+
   if (codeData?.nextCode && !form.getValues("localCode")) {
     form.setValue("localCode", codeData.nextCode);
   }
 
   const onSubmit = (values: z.infer<typeof patientSchema>) => {
-    // Filter empty phones
     const filteredPhones = values.phones?.filter(p => p.number.trim() !== "");
     createPatient.mutate({ data: { ...values, phones: filteredPhones } });
   };
 
-  const addPhone = () => {
-    const current = form.getValues("phones") || [];
-    form.setValue("phones", [...current, { number: "", owner: "" }]);
-  };
-
-  const removePhone = (index: number) => {
-    const current = form.getValues("phones") || [];
-    form.setValue("phones", current.filter((_, i) => i !== index));
-  };
-
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => setLocation("/patients")}>
-          <ArrowRight className="h-5 w-5" />
-        </Button>
-        <h1 className="text-2xl font-bold tracking-tight">تسجيل مريض جديد</h1>
-      </div>
-
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <UserPlus className="h-5 w-5 text-blue-600" />
-                    بيانات المريض
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-5">
-                  <div className="space-y-5">
-                    {/* Basic Info */}
-                    <div>
-                      <h3 className="text-sm font-semibold text-blue-700 mb-3 flex items-center gap-2">
-                        <User className="h-4 w-4" />
-                        المعلومات الأساسية
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField control={form.control} name="localCode" render={({ field }) => (
-                          <FormItem><FormLabel>كود المريض</FormLabel><FormControl><Input type="number" {...field} value={field.value || ""} onChange={e => field.onChange(e.target.valueAsNumber)} /></FormControl><FormMessage /></FormItem>
-                        )} />
-                        <div className="hidden md:block"></div>
-                        <FormField control={form.control} name="nameAr" render={({ field }) => (
-                          <FormItem><FormLabel>الاسم (عربي) *</FormLabel><FormControl><Input {...field} placeholder="الاسم ثلاثي" /></FormControl><FormMessage /></FormItem>
-                        )} />
-                        <FormField control={form.control} name="nameEn" render={({ field }) => (
-                          <FormItem><FormLabel>الاسم (إنجليزي)</FormLabel><FormControl><Input {...field} dir="ltr" /></FormControl><FormMessage /></FormItem>
-                        )} />
-                        <FormField control={form.control} name="gender" render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>الجنس *</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl><SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger></FormControl>
-                              <SelectContent>
-                                <SelectItem value="female">أنثى</SelectItem>
-                                <SelectItem value="male">ذكر</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )} />
-                        <FormField control={form.control} name="dateOfBirth" render={({ field }) => (
-                          <FormItem><FormLabel>تاريخ الميلاد</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
-                        )} />
-                        <FormField control={form.control} name="idNumber" render={({ field }) => (
-                          <FormItem><FormLabel>رقم الهوية / الإقامة</FormLabel><FormControl><Input dir="ltr" {...field} placeholder="رقم الهوية" /></FormControl><FormMessage /></FormItem>
-                        )} />
-                      </div>
-                    </div>
-
-                    <Separator />
-
-                    {/* Contact Info */}
-                    <div>
-                      <h3 className="text-sm font-semibold text-blue-700 mb-3 flex items-center gap-2">
-                        <Phone className="h-4 w-4" />
-                        معلومات الاتصال
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField control={form.control} name="phones.0.number" render={({ field }) => (
-                          <FormItem><FormLabel>رقم الهاتف *</FormLabel><FormControl><Input placeholder="059XXXXXXXX" dir="ltr" {...field} /></FormControl><FormMessage /></FormItem>
-                        )} />
-                        <FormField control={form.control} name="phones.0.owner" render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>المالك (صاحب الرقم)</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl><SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger></FormControl>
-                              <SelectContent>
-                                {phoneOwnerOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                          </FormItem>
-                        )} />
-                        <FormField control={form.control} name="homePhone" render={({ field }) => (
-                          <FormItem><FormLabel>هاتف المنزل</FormLabel><FormControl><Input dir="ltr" placeholder="08XXXXXXXX" {...field} /></FormControl></FormItem>
-                        )} />
-                        <FormField control={form.control} name="email" render={({ field }) => (
-                          <FormItem><FormLabel>البريد الإلكتروني</FormLabel><FormControl><Input dir="ltr" placeholder="email@example.com" {...field} /></FormControl><FormMessage/></FormItem>
-                        )} />
-                      </div>
-                    </div>
-
-                    <Separator />
-
-                    {/* Address */}
-                    <div>
-                      <h3 className="text-sm font-semibold text-blue-700 mb-3 flex items-center gap-2">
-                        <FileText className="h-4 w-4" />
-                        العنوان
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField control={form.control} name="governorate" render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>المحافظة</FormLabel>
-                            <Select onValueChange={(val) => { field.onChange(val); form.setValue("city", ""); form.setValue("neighborhood", ""); }} defaultValue={field.value}>
-                              <FormControl><SelectTrigger><SelectValue placeholder="اختر المحافظة..." /></SelectTrigger></FormControl>
-                              <SelectContent>
-                                {governorateList.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                          </FormItem>
-                        )} />
-                        <FormField control={form.control} name="city" render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>المدينة / المنطقة</FormLabel>
-                            <Select disabled={!form.watch("governorate")} onValueChange={(val) => { field.onChange(val); form.setValue("neighborhood", ""); }} defaultValue={field.value}>
-                              <FormControl><SelectTrigger><SelectValue placeholder={form.watch("governorate") ? "اختر المدينة..." : "اختر المحافظة أولاً"} /></SelectTrigger></FormControl>
-                              <SelectContent>
-                                {(form.watch("governorate") ? governorateCities[form.watch("governorate") as string] || [] : []).map(c => (
-                                  <SelectItem key={c} value={c}>{c}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </FormItem>
-                        )} />
-                        {form.watch("governorate") === "غزة" && form.watch("city") === "مدينة غزة" && (
-                          <FormField control={form.control} name="neighborhood" render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>الحي</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl><SelectTrigger><SelectValue placeholder="اختر الحي..." /></SelectTrigger></FormControl>
-                                <SelectContent>
-                                  {gazaNeighborhoods.map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}
-                                </SelectContent>
-                              </Select>
-                            </FormItem>
-                          )} />
-                        )}
-                        <FormField control={form.control} name="address" render={({ field }) => (
-                          <FormItem className={form.watch("governorate") === "غزة" && form.watch("city") === "مدينة غزة" ? "" : "md:col-span-2"}>
-                            <FormLabel>العنوان التفصيلي</FormLabel>
-                            <FormControl><Input {...field} placeholder="الشارع، رقم المبنى، طابق" /></FormControl>
-                          </FormItem>
-                        )} />
-                      </div>
-                    </div>
-
-                    <Separator />
-
-                    {/* Additional Info */}
-                    <div>
-                      <h3 className="text-sm font-semibold text-blue-700 mb-3 flex items-center gap-2">
-                        <BookUser className="h-4 w-4" />
-                        معلومات إضافية
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField control={form.control} name="maritalStatus" render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>الحالة الاجتماعية</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl><SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger></FormControl>
-                              <SelectContent>
-                                {maritalOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                          </FormItem>
-                        )} />
-                        <FormField control={form.control} name="nationality" render={({ field }) => (
-                          <FormItem><FormLabel>الجنسية</FormLabel><FormControl><Input {...field} placeholder="فلسطيني" /></FormControl></FormItem>
-                        )} />
-                        <FormField control={form.control} name="occupation" render={({ field }) => (
-                          <FormItem><FormLabel>المهنة</FormLabel><FormControl><Input {...field} placeholder="المهنة" /></FormControl></FormItem>
-                        )} />
-                        <FormField control={form.control} name="insuranceStatus" render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>حالة التأمين</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl><SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger></FormControl>
-                              <SelectContent>
-                                {insuranceOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                          </FormItem>
-                        )} />
-                        <FormField control={form.control} name="referredBy" render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>مصدر الإحالة</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl><SelectTrigger><SelectValue placeholder="اختر مصدر الإحالة..." /></SelectTrigger></FormControl>
-                              <SelectContent>
-                                <SelectItem value="none">بدون إحالة (زيارة مباشرة)</SelectItem>
-                                {Array.isArray(providersData) && providersData.map(p => (
-                                  <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </FormItem>
-                        )} />
-                        <FormField control={form.control} name="source" render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>كيف عرفت عنا؟</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl><SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger></FormControl>
-                              <SelectContent>
-                                {sourceOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                          </FormItem>
-                        )} />
-                      </div>
-                    </div>
-
-                    <Separator />
-
-                    {/* Notes */}
-                    <div>
-                      <h3 className="text-sm font-semibold text-blue-700 mb-3 flex items-center gap-2">
-                        <MessageSquare className="h-4 w-4" />
-                        ملاحظات عامة
-                      </h3>
-                      <FormField control={form.control} name="notes" render={({ field }) => (
-                        <FormItem><FormControl><Textarea className="resize-none min-h-[80px]" placeholder="أي ملاحظات عامة عن المريض..." {...field} /></FormControl></FormItem>
-                      )} />
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end gap-4 pt-3">
-                    <Button variant="outline" type="button" onClick={() => setLocation("/patients")}>إلغاء</Button>
-                    <Button type="submit" disabled={createPatient.isPending} className="bg-gradient-to-r from-blue-600 to-blue-700">
-                      {createPatient.isPending ? "جاري الحفظ..." : "حفظ بيانات المريض"}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-            
-            {/* Preview Card */}
-            <div className="lg:col-span-1">
-              <Card className="sticky top-6">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-sm">
-                    <Eye className="h-4 w-4 text-rose-500" />
-                    معاينة البطاقة
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="rounded-xl border bg-gradient-to-b from-blue-600/5 to-rose-600/5 p-5 text-center">
-                    <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-600 to-rose-500 mx-auto mb-3 flex items-center justify-center shadow-lg">
-                      <User className="h-8 w-8 text-white" />
-                    </div>
-                    <h3 className="font-bold text-lg">{form.watch("nameAr") || "اسم المريض"}</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      {form.watch("localCode") ? `كود: ${form.watch("localCode")}` : "كود المريض"}
-                    </p>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between p-2 bg-white rounded border">
-                        <span className="text-muted-foreground">رقم الهاتف</span>
-                        <span className="font-medium">{form.watch("phones")?.[0]?.number || "---"}</span>
-                      </div>
-                      <div className="flex justify-between p-2 bg-white rounded border">
-                        <span className="text-muted-foreground">العنوان</span>
-                        <span className="font-medium">
-                          {[form.watch("governorate"), form.watch("city")].filter(Boolean).join(" - ") || "---"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+    <div className="min-h-full" dir="rtl">
+      <motion.div initial="hidden" animate="visible" variants={fadeUp} className="space-y-6">
+        
+        {/* ─── Header ─── */}
+        <div className="flex items-center gap-4 mb-6">
+          <button 
+            onClick={() => setLocation("/patients")}
+            className="flex items-center justify-center w-10 h-10 rounded-[10px] bg-[rgba(6,19,41,0.6)] border border-[rgba(40,130,220,0.16)] text-[#8EA2BD] transition-all hover:bg-[rgba(10,108,255,0.1)] hover:text-white"
+          >
+            <ArrowRight className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="text-[28px] font-extrabold text-white tracking-tight" style={{ fontFamily: '"Thmanyah Sans", sans-serif' }}>
+              تسجيل مريض جديد
+            </h1>
+            <p className="text-[13px] mt-1 font-medium text-[#8EA2BD]">إضافة ملف طبي وحساب جديد للمريض في العيادة.</p>
           </div>
-        </form>
-      </Form>
+        </div>
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* ─── Main Content ─── */}
+              <div className="lg:col-span-2 space-y-6">
+                
+                {/* Basic Info */}
+                <div className="rounded-[14px] p-6 bg-[#050C1F] border border-[rgba(40,130,220,0.16)]">
+                  <h3 className="text-[15px] font-bold text-white mb-5 flex items-center gap-2">
+                    <User className="w-4 h-4 text-[#0A6CFF]" /> المعلومات الأساسية
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <FormField control={form.control} name="localCode" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[#8EA2BD] text-[12px] font-bold">كود المريض</FormLabel>
+                        <FormControl>
+                          <Input type="number" {...field} value={field.value || ""} onChange={e => field.onChange(e.target.valueAsNumber)} className="bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] h-[42px]" />
+                        </FormControl>
+                        <FormMessage className="text-[#FF4D60] text-[10px]" />
+                      </FormItem>
+                    )} />
+                    <div className="hidden md:block" />
+                    
+                    <FormField control={form.control} name="nameAr" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[#8EA2BD] text-[12px] font-bold">الاسم (عربي) *</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="الاسم ثلاثي" className="bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] h-[42px]" />
+                        </FormControl>
+                        <FormMessage className="text-[#FF4D60] text-[10px]" />
+                      </FormItem>
+                    )} />
+                    
+                    <FormField control={form.control} name="nameEn" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[#8EA2BD] text-[12px] font-bold">الاسم (إنجليزي)</FormLabel>
+                        <FormControl>
+                          <Input {...field} dir="ltr" className="bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] h-[42px]" />
+                        </FormControl>
+                      </FormItem>
+                    )} />
+                    
+                    <FormField control={form.control} name="gender" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[#8EA2BD] text-[12px] font-bold">الجنس *</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] h-[42px]">
+                              <SelectValue placeholder="اختر..." />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="bg-[#061329] border-[rgba(40,130,220,0.16)] text-white">
+                            <SelectItem value="male" className="text-[12px]">ذكر</SelectItem>
+                            <SelectItem value="female" className="text-[12px]">أنثى</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )} />
+
+                    <FormField control={form.control} name="dateOfBirth" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[#8EA2BD] text-[12px] font-bold">تاريخ الميلاد</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} className="bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] h-[42px]" style={{ colorScheme: "dark" }} />
+                        </FormControl>
+                      </FormItem>
+                    )} />
+                  </div>
+                </div>
+
+                {/* Contact Info */}
+                <div className="rounded-[14px] p-6 bg-[#050C1F] border border-[rgba(40,130,220,0.16)]">
+                  <h3 className="text-[15px] font-bold text-white mb-5 flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-[#0A6CFF]" /> أرقام التواصل
+                  </h3>
+                  <div className="space-y-4">
+                    {fields.map((field, index) => (
+                      <div key={field.id} className="flex flex-col md:flex-row gap-3 items-end">
+                        <FormField control={form.control} name={`phones.${index}.number`} render={({ field }) => (
+                          <FormItem className="flex-1">
+                            <FormLabel className="text-[#8EA2BD] text-[12px] font-bold">رقم الجوال {index + 1}</FormLabel>
+                            <FormControl>
+                              <Input {...field} dir="ltr" placeholder="05XXXXXXXX" className="bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] h-[42px]" />
+                            </FormControl>
+                            <FormMessage className="text-[#FF4D60] text-[10px]" />
+                          </FormItem>
+                        )} />
+                        
+                        <FormField control={form.control} name={`phones.${index}.owner`} render={({ field }) => (
+                          <FormItem className="w-full md:w-[150px]">
+                            <FormLabel className="text-[#8EA2BD] text-[12px] font-bold">المالك</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] h-[42px]">
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent className="bg-[#061329] border-[rgba(40,130,220,0.16)] text-white">
+                                {phoneOwnerOptions.map(o => <SelectItem key={o} value={o} className="text-[12px]">{o}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                          </FormItem>
+                        )} />
+                        
+                        {index > 0 && (
+                          <button 
+                            type="button" 
+                            onClick={() => remove(index)}
+                            className="h-[42px] w-[42px] rounded-[10px] flex items-center justify-center text-[#FF4D60] bg-[rgba(255,77,96,0.1)] hover:bg-[#FF4D60] hover:text-white transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    <button 
+                      type="button" 
+                      onClick={() => append({ number: "", owner: "شخصي" })}
+                      className="flex items-center gap-2 text-[12px] font-bold text-[#0A6CFF] hover:text-[#00D8D8] transition-colors mt-2"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> أضف رقم آخر
+                    </button>
+                  </div>
+                </div>
+
+                {/* Additional Info */}
+                <div className="rounded-[14px] p-6 bg-[#050C1F] border border-[rgba(40,130,220,0.16)]">
+                  <h3 className="text-[15px] font-bold text-white mb-5 flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-[#0A6CFF]" /> معلومات السكن والعمل
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <FormField control={form.control} name="governorate" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[#8EA2BD] text-[12px] font-bold">المحافظة</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] h-[42px]">
+                              <SelectValue placeholder="اختر المحافظة" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="bg-[#061329] border-[rgba(40,130,220,0.16)] text-white">
+                            {governorateList.map(g => <SelectItem key={g} value={g} className="text-[12px]">{g}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )} />
+
+                    <FormField control={form.control} name="address" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[#8EA2BD] text-[12px] font-bold">العنوان المكتوب (مفصل)</FormLabel>
+                        <FormControl>
+                          <Input {...field} className="bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] h-[42px]" />
+                        </FormControl>
+                      </FormItem>
+                    )} />
+
+                    <FormField control={form.control} name="occupation" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[#8EA2BD] text-[12px] font-bold">المهنة</FormLabel>
+                        <FormControl>
+                          <Input {...field} className="bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] h-[42px]" />
+                        </FormControl>
+                      </FormItem>
+                    )} />
+                    
+                    <FormField control={form.control} name="maritalStatus" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[#8EA2BD] text-[12px] font-bold">الحالة الاجتماعية</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] h-[42px]">
+                              <SelectValue placeholder="اختر..." />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="bg-[#061329] border-[rgba(40,130,220,0.16)] text-white">
+                            {maritalOptions.map(o => <SelectItem key={o} value={o} className="text-[12px]">{o}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )} />
+                  </div>
+                </div>
+
+              </div>
+
+              {/* ─── Sidebar Content ─── */}
+              <div className="space-y-6">
+                <div className="rounded-[14px] p-6 bg-[#050C1F] border border-[rgba(40,130,220,0.16)] sticky top-6">
+                  <h3 className="text-[15px] font-bold text-white mb-5 flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-[#0A6CFF]" /> معلومات إضافية
+                  </h3>
+                  
+                  <div className="space-y-5">
+                    <FormField control={form.control} name="insuranceStatus" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[#8EA2BD] text-[12px] font-bold">حالة التأمين</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] h-[42px]">
+                              <SelectValue placeholder="اختر..." />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="bg-[#061329] border-[rgba(40,130,220,0.16)] text-white">
+                            {insuranceOptions.map(o => <SelectItem key={o} value={o} className="text-[12px]">{o}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )} />
+
+                    <FormField control={form.control} name="source" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[#8EA2BD] text-[12px] font-bold">مصدر المعرفة بالعيادة</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] h-[42px]">
+                              <SelectValue placeholder="اختر..." />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="bg-[#061329] border-[rgba(40,130,220,0.16)] text-white">
+                            {sourceOptions.map(o => <SelectItem key={o} value={o} className="text-[12px]">{o}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )} />
+
+                    <FormField control={form.control} name="notes" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[#8EA2BD] text-[12px] font-bold">ملاحظات عامة</FormLabel>
+                        <FormControl>
+                          <Textarea {...field} className="bg-[rgba(6,19,41,0.6)] border-[rgba(40,130,220,0.16)] text-white text-[12px] min-h-[100px] resize-none" />
+                        </FormControl>
+                      </FormItem>
+                    )} />
+                    
+                    <div className="pt-4 mt-4 border-t border-[rgba(40,130,220,0.16)]">
+                      <Button 
+                        type="submit" 
+                        disabled={createPatient.isPending} 
+                        className="w-full h-[46px] rounded-[10px] text-[14px] font-bold text-white transition-all hover:scale-[1.02] border-0"
+                        style={{
+                          background: "linear-gradient(135deg, #0A6CFF, #00D8D8)",
+                          boxShadow: "0 4px 15px rgba(10,108,255,0.25)",
+                        }}
+                      >
+                        {createPatient.isPending ? (
+                          <Activity className="w-5 h-5 animate-spin" />
+                        ) : (
+                          "حفظ بيانات المريض"
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
+        </Form>
+      </motion.div>
     </div>
   );
 }

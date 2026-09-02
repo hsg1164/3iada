@@ -14,12 +14,17 @@ import staffRouter from "./staff";
 import tasksRouter from "./tasks";
 import supabaseProxyRouter from "./supabase-proxy";
 import uploadRouter from "./upload";
+import clinicsRouter from "./clinics";
 import authRouter, { authMiddleware } from "./auth";
+import { publicContactRouter, contactMessagesRouter } from "./contact";
+import { subscriptionGuard } from "../lib/clinic-status";
 
 const router: IRouter = Router();
 
 router.use(authRouter);
+router.use(publicContactRouter);
 router.use(authMiddleware);
+router.use(subscriptionGuard);
 
 router.use(healthRouter);
 router.use(dashboardRouter);
@@ -36,5 +41,7 @@ router.use(staffRouter);
 router.use(tasksRouter);
 router.use(supabaseProxyRouter);
 router.use(uploadRouter);
+router.use(clinicsRouter);
+router.use(contactMessagesRouter);
 
 export default router;

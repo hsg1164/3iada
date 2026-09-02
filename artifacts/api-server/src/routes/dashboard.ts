@@ -1,11 +1,15 @@
 import { Router } from "express";
 import { supabase } from "../lib/supabase";
+import { tenantMiddleware, TenantRequest } from "../middlewares/tenant";
 
 const router = Router();
 
-router.get("/dashboard/stats", async (req, res) => {
+router.use("/dashboard", tenantMiddleware);
+
+router.get("/dashboard/stats", async (req: TenantRequest, res) => {
   try {
     const today = new Date().toISOString().split("T")[0];
+    const clinicId = req.tenant!.clinicId;
 
     const [
       { count: todayAppts },
@@ -15,12 +19,12 @@ router.get("/dashboard/stats", async (req, res) => {
       { count: totalAppointments },
       { data: todayPaymentsData },
     ] = await Promise.all([
-      supabase.from("appointments").select("*", { count: "exact", head: true }).eq("appointment_date", today),
-      supabase.from("patients").select("*", { count: "exact", head: true }).eq("is_deleted", false).gte("created_at", today),
-      supabase.from("patients").select("*", { count: "exact", head: true }).eq("is_deleted", false),
-      supabase.from("visits").select("*", { count: "exact", head: true }),
-      supabase.from("appointments").select("*", { count: "exact", head: true }),
-      supabase.from("payments").select("amount, appointment_id, appointments!inner(appointment_date)").eq("appointments.appointment_date", today),
+      supabase.from("appointments").select("*", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("appointment_date", today),
+      supabase.from("patients").select("*", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("is_deleted", false).gte("created_at", today),
+      supabase.from("patients").select("*", { count: "exact", head: true }).eq("clinic_id", clinicId).eq("is_deleted", false),
+      supabase.from("visits").select("*", { count: "exact", head: true }).eq("clinic_id", clinicId),
+      supabase.from("appointments").select("*", { count: "exact", head: true }).eq("clinic_id", clinicId),
+      supabase.from("payments").select("amount, appointment_id, appointments!inner(appointment_date, clinic_id)").eq("clinic_id", clinicId).eq("appointments.clinic_id", clinicId).eq("appointments.appointment_date", today),
     ]);
 
     const todayRevenue = (todayPaymentsData ?? []).reduce((s: number, p: any) => s + parseFloat(p.amount ?? "0"), 0);
@@ -39,10 +43,12 @@ router.get("/dashboard/stats", async (req, res) => {
   }
 });
 
-router.get("/dashboard/funnel", async (req, res) => {
+router.get("/dashboard/funnel", async (req: TenantRequest, res) => {
   try {
     const date = (req.query.date as string) || new Date().toISOString().split("T")[0];
-    const { data: rows, error } = await supabase.from("appointments").select("status").eq("appointment_date", date);
+    const clinicId = req.tenant!.clinicId;
+
+    const { data: rows, error } = await supabase.from("appointments").select("status").eq("clinic_id", clinicId).eq("appointment_date", date);
     if (error) throw error;
 
     const map: Record<string, number> = {};

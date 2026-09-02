@@ -1,103 +1,246 @@
-import { useGetDashboardStats, useGetDailyFunnel } from "@workspace/api-client-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Users, DollarSign, UserPlus, Clock, LogIn, Activity, CheckCircle, CalendarX, XCircle, Stethoscope, ClipboardList } from "lucide-react";
-import { useLocation } from "wouter";
+import { useMemo } from "react";
+import { motion } from "framer-motion";
+import {
+  useGetDashboardStats,
+  useGetDailyFunnel,
+  useListAppointments,
+} from "@workspace/api-client-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { CalendarDays, UserPlus, Users, DollarSign, Activity, ChevronDown } from "lucide-react";
+import { useAuth } from "@/components/auth/auth-provider";
+import { StatCard } from "@/components/dashboard/stat-card";
+import { RevenueChart } from "@/components/dashboard/revenue-chart";
+import { AppointmentJourney } from "@/components/dashboard/appointment-journey";
+import { UpcomingAppointments } from "@/components/dashboard/upcoming-appointments";
+import { QuickAccess } from "@/components/dashboard/quick-access";
+import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
 
+/* ─── animation variants ─── */
+const stagger = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.07 } },
+};
+const fadeUp = {
+  hidden: { opacity: 0, y: 14 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.2, 0.8, 0.2, 1] as const } },
+};
+
+/* ─── shared card style for analytics row ─── */
+const cardStyle: React.CSSProperties = {
+  background: "linear-gradient(145deg, #071A32, #061329)",
+  border: "1px solid rgba(40,130,220,0.16)",
+  backdropFilter: "blur(18px)",
+  borderRadius: 14,
+};
+
+const AR_DAYS = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+
+function isoDate(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+/* ━━━━━━━━━━━━━━━━━━ MAIN DASHBOARD ━━━━━━━━━━━━━━━━━━ */
 export default function Dashboard() {
   const { data: stats, isLoading: statsLoading } = useGetDashboardStats();
   const { data: funnel, isLoading: funnelLoading } = useGetDailyFunnel();
-  const [, setLocation] = useLocation();
+  const { user } = useAuth();
+
+  const weekRange = useMemo(() => {
+    const dates: string[] = [];
+    const today = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      dates.push(isoDate(d));
+    }
+    return dates;
+  }, []);
+
+  const weeklyQuery = useListAppointments(
+    { dateFrom: weekRange[0], dateTo: weekRange[6], limit: 200 }
+  );
+
+  const {
+    weeklyRevenue,
+    sparkAppointments,
+    sparkRevenue,
+  } = useMemo(() => {
+    const byDate = new Map<string, { count: number; revenue: number }>();
+    for (const d of weekRange) byDate.set(d, { count: 0, revenue: 0 });
+    for (const a of weeklyQuery.data?.appointments ?? []) {
+      const key = a.appointmentDate || "";
+      if (!byDate.has(key)) continue;
+      const rec = byDate.get(key)!;
+      rec.count += 1;
+      rec.revenue += a.paidAmount || 0;
+    }
+    const revenue = weekRange.map((d) => ({
+      day: AR_DAYS[new Date(d + "T00:00:00").getDay()],
+      value: Math.round(byDate.get(d)!.revenue),
+    }));
+    const appointmentsSpark = weekRange.map((d) => byDate.get(d)!.count);
+    const revenueSpark = weekRange.map((d) => Math.round(byDate.get(d)!.revenue));
+    return { weeklyRevenue: revenue, sparkAppointments: appointmentsSpark, sparkRevenue: revenueSpark };
+  }, [weeklyQuery.data, weekRange]);
+
+  const isDoctor = user?.roleName === "doctor";
+  const isReceptionist = user?.roleName === "receptionist";
+  const isAdmin =
+    user?.roleName === "admin" || user?.isSuperadmin || (!isDoctor && !isReceptionist);
+
+  const greeting = isDoctor
+    ? `مرحباً بك د. ${user?.name?.split(" ").slice(-1)[0] || ""}`
+    : `مرحباً بك ${user?.name || "المستخدم"}`;
+
+  const isLoading = statsLoading || funnelLoading || (weeklyQuery.isLoading && !weeklyQuery.data);
+
+  if (isLoading) {
+    return <DashboardSkeleton />;
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">لوحة التحكم</h1>
-      </div>
+    <div className="min-h-full" dir="rtl">
+      <motion.div
+        variants={stagger}
+        initial="hidden"
+        animate="visible"
+        className="space-y-6"
+      >
+        {/* ─── Header ─── */}
+        <motion.div variants={fadeUp} className="flex flex-col mb-8 mt-2">
+          <h1
+            className="text-[32px] font-extrabold text-white tracking-tight leading-tight"
+            style={{ fontFamily: '"Thmanyah Sans", ui-sans-serif, system-ui, sans-serif' }}
+          >
+            لوحة التحكم
+          </h1>
+          <p className="text-[14px] mt-2 font-medium" style={{ color: "#8EA2BD" }}>
+            {greeting}، إليك ملخص العيادة اليوم
+          </p>
+        </motion.div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard title="إجمالي حجوزات اليوم" value={stats?.todayAppointments} icon={Calendar} loading={statsLoading} />
-        <MetricCard title="مرضى جدد اليوم" value={stats?.newPatientsToday} icon={UserPlus} loading={statsLoading} />
-        <MetricCard title="إجمالي المرضى" value={stats?.totalPatients} icon={Users} loading={statsLoading} />
-        <MetricCard title="إيرادات اليوم" value={`₪ ${stats?.todayRevenue || 0}`} icon={DollarSign} loading={statsLoading} />
-      </div>
-
-      {/* Daily Funnel */}
-      <div>
-        <h2 className="text-xl font-bold mb-4">مسار الحجوزات اليومي</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <FunnelCard title="منتظر الوصول" count={funnel?.waitingArrival} icon={Clock} color="bg-amber-100 text-amber-600" loading={funnelLoading} />
-          <FunnelCard title="في الاستقبال" count={funnel?.inReception} icon={LogIn} color="bg-blue-100 text-blue-600" loading={funnelLoading} />
-          <FunnelCard title="في غرفة الكشف" count={funnel?.inExamination} icon={Activity} color="bg-indigo-100 text-indigo-600" loading={funnelLoading} />
-          <FunnelCard title="أنهى الكشف" count={funnel?.completed} icon={CheckCircle} color="bg-emerald-100 text-emerald-600" loading={funnelLoading} />
-          <FunnelCard title="تأجيل الحجز" count={funnel?.postponed} icon={CalendarX} color="bg-purple-100 text-purple-600" loading={funnelLoading} />
-          <FunnelCard title="لم يحضر" count={funnel?.noShow} icon={XCircle} color="bg-red-100 text-red-600" loading={funnelLoading} />
+        {/* ─── KPI Cards ─── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            title="إجمالي المواعيد"
+            rawValue={stats?.todayAppointments ?? 0}
+            icon={CalendarDays}
+            iconBg="rgba(10, 108, 255, 0.4)"
+            iconColor="#0A6CFF"
+            sparkData={sparkAppointments}
+          />
+          <StatCard
+            title="مرضى جدد اليوم"
+            rawValue={stats?.newPatientsToday ?? 0}
+            icon={UserPlus}
+            iconBg="rgba(139, 92, 246, 0.4)"
+            iconColor="#8B5CF6"
+            sparkData={[]}
+          />
+          <StatCard
+            title="إجمالي المرضى"
+            rawValue={stats?.totalPatients ?? 0}
+            icon={Users}
+            iconBg="rgba(0, 216, 216, 0.4)"
+            iconColor="#00D8D8"
+            sparkData={[]}
+          />
+          <StatCard
+            title="إيرادات اليوم"
+            rawValue={stats?.todayRevenue ?? 0}
+            formattedSuffix="ر.س"
+            icon={DollarSign}
+            iconBg="rgba(59, 130, 246, 0.4)"
+            iconColor="#3B82F6"
+            sparkData={sparkRevenue}
+          />
         </div>
-      </div>
 
-      {/* Quick Access */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <button onClick={() => setLocation("/reception")} className="group relative overflow-hidden rounded-xl border bg-gradient-to-br from-blue-600 to-blue-800 p-6 text-right text-white shadow-lg transition-all hover:shadow-xl hover:scale-[1.02]">
-          <div className="absolute -left-4 -top-4 h-24 w-24 rounded-full bg-white/5" />
-          <div className="absolute -bottom-4 -right-4 h-32 w-32 rounded-full bg-white/5" />
-          <ClipboardList className="h-10 w-10 mb-3 opacity-90" />
-          <h3 className="text-xl font-bold">لوحة السكرتير</h3>
-          <p className="mt-1 text-sm text-blue-100">إدارة الطابور، تسجيل مرضى جدد، الفواتير والمدفوعات</p>
-          <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-blue-200 group-hover:text-white transition-colors">
-            الدخول ←
-          </span>
-        </button>
+        {/* ─── Analytics Row ─── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
 
-        <button onClick={() => setLocation("/doctor")} className="group relative overflow-hidden rounded-xl border bg-gradient-to-br from-emerald-600 to-emerald-800 p-6 text-right text-white shadow-lg transition-all hover:shadow-xl hover:scale-[1.02]">
-          <div className="absolute -left-4 -top-4 h-24 w-24 rounded-full bg-white/5" />
-          <div className="absolute -bottom-4 -right-4 h-32 w-32 rounded-full bg-white/5" />
-          <Stethoscope className="h-10 w-10 mb-3 opacity-90" />
-          <h3 className="text-xl font-bold">لوحة الطبيب</h3>
-          <p className="mt-1 text-sm text-emerald-100">قائمة المرضى، الكشف التجميلي، سجل الحقن والليزر</p>
-          <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-emerald-200 group-hover:text-white transition-colors">
-            الدخول ←
-          </span>
-        </button>
-      </div>
+          {/* 1st in RTL (Right) — Daily Booking Journey */}
+          <motion.div variants={fadeUp}>
+            <Card className="h-full flex flex-col" style={cardStyle}>
+              <CardContent className="p-5 flex-1 flex flex-col">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-[14px] font-bold text-white">
+                    مسار الحجوزات اليومي
+                  </h3>
+                  <CalendarDays className="h-4 w-4 text-[#0A6CFF]" />
+                </div>
+                <div className="flex-1 flex items-center justify-center mb-6">
+                  <AppointmentJourney
+                    waitingArrival={funnel?.waitingArrival ?? 0}
+                    inReception={funnel?.inReception ?? 0}
+                    inExamination={funnel?.inExamination ?? 0}
+                    completed={funnel?.completed ?? 0}
+                    sessionDone={funnel?.sessionDone ?? 0}
+                    postponed={funnel?.postponed ?? 0}
+                    noShow={funnel?.noShow ?? 0}
+                  />
+                </div>
+                <button
+                  className="w-full flex items-center justify-center gap-2 rounded-lg py-2 text-[12px] font-bold transition-colors mt-auto"
+                  style={{
+                    background: "rgba(10, 108, 255, 0.1)",
+                    color: "#0A6CFF",
+                  }}
+                >
+                  <Activity className="h-4 w-4" />
+                  عرض تفاصيل الحجوزات
+                </button>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* 2nd in RTL (Center) — Revenue Chart */}
+          <motion.div variants={fadeUp}>
+            <Card className="h-full flex flex-col" style={cardStyle}>
+              <CardContent className="p-5 flex-1 flex flex-col">
+                <div className="flex items-center justify-between mb-5">
+                  <div className="flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4 text-[#00D8D8]" />
+                    <h3 className="text-[14px] font-bold text-white">
+                      نظرة عامة على الإيرادات
+                    </h3>
+                  </div>
+                  <button
+                    className="flex items-center gap-2 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors"
+                    style={{ background: "rgba(255,255,255,0.05)", color: "#8EA2BD" }}
+                  >
+                    آخر 7 أيام
+                    <ChevronDown className="h-3 w-3" />
+                  </button>
+                </div>
+                <div className="flex-1">
+                  <RevenueChart data={weeklyRevenue} />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* 3rd in RTL (Left) — Upcoming Appointments */}
+          <motion.div variants={fadeUp}>
+            <Card className="h-full" style={cardStyle}>
+              <CardContent className="p-5">
+                <UpcomingAppointments />
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+
+        {/* ─── Quick Access ─── */}
+        <motion.div variants={fadeUp}>
+          <QuickAccess
+            showSecretary={isAdmin || isReceptionist}
+            showDoctor={isAdmin || isDoctor}
+          />
+        </motion.div>
+      </motion.div>
     </div>
-  );
-}
-
-function MetricCard({ title, value, icon: Icon, loading }: { title: string, value: string | number | undefined, icon: any, loading: boolean }) {
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <Skeleton className="h-8 w-20" />
-        ) : (
-          <div className="text-2xl font-bold">{value !== undefined ? value : "-"}</div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function FunnelCard({ title, count, icon: Icon, color, loading }: { title: string, count: number | undefined, icon: any, color: string, loading: boolean }) {
-  return (
-    <Card className="overflow-hidden">
-      <CardContent className="p-0">
-        <div className={`p-3 flex justify-center items-center ${color}`}>
-          <Icon className="h-6 w-6" />
-        </div>
-        <div className="p-3 text-center">
-          <div className="text-xs text-muted-foreground font-medium mb-1 truncate" title={title}>{title}</div>
-          {loading ? (
-            <Skeleton className="h-6 w-12 mx-auto" />
-          ) : (
-            <div className="text-xl font-bold">{count !== undefined ? count : 0}</div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
   );
 }

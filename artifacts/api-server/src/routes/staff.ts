@@ -1,14 +1,14 @@
 import { Router } from "express";
-import { supabase } from "../lib/supabase";
+import { tenantSupabase } from "../lib/tenant-supabase";
 
 const router = Router();
 
 router.get("/staff", async (req, res) => {
   try {
     const [{ data: users, error }, { data: roles }, { data: details }] = await Promise.all([
-      supabase.from("system_users").select("*").order("name"),
-      supabase.from("roles").select("id, name"),
-      supabase.from("staff_details").select("*"),
+      tenantSupabase(req).from("system_users").select("*").order("name"),
+      tenantSupabase(req).from("roles").select("id, name"),
+      tenantSupabase(req).from("staff_details").select("*"),
     ]);
     if (error) throw error;
 
@@ -50,16 +50,16 @@ router.post("/staff", async (req, res) => {
   try {
     const { userId, position, specialty, phone, salary, joiningDate, workDays, shiftStart, shiftEnd, notes } = req.body;
 
-    const { data: existing } = await supabase.from("staff_details").select("id").eq("user_id", userId).single();
+    const { data: existing } = await tenantSupabase(req).from("staff_details").select("id").eq("user_id", userId).single();
     let detail;
     if (existing) {
-      const { data: updated } = await supabase.from("staff_details").update({
+      const { data: updated } = await tenantSupabase(req).from("staff_details").update({
         position, specialty, phone, salary: salary?.toString(), joining_date: joiningDate,
         work_days: workDays, shift_start: shiftStart, shift_end: shiftEnd, notes, updated_at: new Date().toISOString(),
       }).eq("user_id", userId).select().single();
       detail = updated;
     } else {
-      const { data: created } = await supabase.from("staff_details").insert({
+      const { data: created } = await tenantSupabase(req).from("staff_details").insert({
         user_id: userId, position, specialty, phone, salary: salary?.toString(),
         joining_date: joiningDate, work_days: workDays ?? [], shift_start: shiftStart, shift_end: shiftEnd, notes,
       }).select().single();
@@ -67,8 +67,8 @@ router.post("/staff", async (req, res) => {
     }
 
     const [{ data: user }, { data: roles }] = await Promise.all([
-      supabase.from("system_users").select("*").eq("id", userId).single(),
-      supabase.from("roles").select("id, name"),
+      tenantSupabase(req).from("system_users").select("*").eq("id", userId).single(),
+      tenantSupabase(req).from("roles").select("id, name"),
     ]);
     if (!user) return res.status(404).json({ error: "User not found" });
     const roleMap = Object.fromEntries((roles ?? []).map((r: any) => [r.id, r.name]));
@@ -106,19 +106,19 @@ router.patch("/staff/:id", async (req, res) => {
     if (shiftEnd !== undefined) updates.shift_end = shiftEnd;
     if (notes !== undefined) updates.notes = notes;
 
-    let { data: existing } = await supabase.from("staff_details").select("id").eq("user_id", userId).single();
+    let { data: existing } = await tenantSupabase(req).from("staff_details").select("id").eq("user_id", userId).single();
     let detail;
     if (!existing) {
-      const { data: created } = await supabase.from("staff_details").insert({ user_id: userId, work_days: [], ...updates }).select().single();
+      const { data: created } = await tenantSupabase(req).from("staff_details").insert({ user_id: userId, work_days: [], ...updates }).select().single();
       detail = created;
     } else {
-      const { data: updated } = await supabase.from("staff_details").update(updates).eq("user_id", userId).select().single();
+      const { data: updated } = await tenantSupabase(req).from("staff_details").update(updates).eq("user_id", userId).select().single();
       detail = updated;
     }
 
     const [{ data: user }, { data: roles }] = await Promise.all([
-      supabase.from("system_users").select("*").eq("id", userId).single(),
-      supabase.from("roles").select("id, name"),
+      tenantSupabase(req).from("system_users").select("*").eq("id", userId).single(),
+      tenantSupabase(req).from("roles").select("id, name"),
     ]);
     if (!user) return res.status(404).json({ error: "User not found" });
     const roleMap = Object.fromEntries((roles ?? []).map((r: any) => [r.id, r.name]));

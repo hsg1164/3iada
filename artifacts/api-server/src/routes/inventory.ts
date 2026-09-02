@@ -1,12 +1,12 @@
 import { Router } from "express";
-import { supabase } from "../lib/supabase";
+import { tenantSupabase } from "../lib/tenant-supabase";
 
 const router = Router();
 
 router.get("/inventory/items", async (req, res) => {
   try {
     const { branch, lowStock } = req.query as Record<string, string>;
-    let query = supabase.from("inventory_items").select("*").order("name");
+    let query = tenantSupabase(req).from("inventory_items").select("*").order("name");
     if (branch) query = query.eq("branch", branch);
     const { data: rows, error } = await query;
     if (error) throw error;
@@ -34,7 +34,7 @@ router.get("/inventory/items", async (req, res) => {
 router.post("/inventory/items", async (req, res) => {
   try {
     const data = req.body;
-    const { data: item, error } = await supabase.from("inventory_items").insert({
+    const { data: item, error } = await tenantSupabase(req).from("inventory_items").insert({
       barcode: data.barcode ?? null,
       branch: data.branch,
       name: data.name,
@@ -60,7 +60,7 @@ router.post("/inventory/items/:id/transaction", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const { type, quantity, note, cost } = req.body;
-    const { data: txn, error } = await supabase.from("inventory_transactions").insert({
+    const { data: txn, error } = await tenantSupabase(req).from("inventory_transactions").insert({
       item_id: id,
       type,
       quantity: quantity.toString(),
@@ -69,10 +69,10 @@ router.post("/inventory/items/:id/transaction", async (req, res) => {
     }).select().single();
     if (error) throw error;
 
-    const { data: item } = await supabase.from("inventory_items").select("quantity").eq("id", id).single();
+    const { data: item } = await tenantSupabase(req).from("inventory_items").select("quantity").eq("id", id).single();
     const currentQty = parseFloat((item as any)?.quantity ?? "0");
     const delta = type === "add" ? quantity : -quantity;
-    await supabase.from("inventory_items").update({ quantity: (currentQty + delta).toString() }).eq("id", id);
+    await tenantSupabase(req).from("inventory_items").update({ quantity: (currentQty + delta).toString() }).eq("id", id);
 
     res.status(201).json({ ...txn, quantity: parseFloat((txn as any).quantity ?? "0"), cost: (txn as any).cost ? parseFloat((txn as any).cost) : null });
   } catch (err) {
@@ -83,7 +83,7 @@ router.post("/inventory/items/:id/transaction", async (req, res) => {
 
 router.get("/inventory/supplier-debts", async (req, res) => {
   try {
-    const { data: rows, error } = await supabase.from("supplier_debts").select("*").order("created_at", { ascending: false });
+    const { data: rows, error } = await tenantSupabase(req).from("supplier_debts").select("*").order("created_at", { ascending: false });
     if (error) throw error;
     res.json((rows ?? []).map((r: any) => ({ ...r, amount: parseFloat(r.amount ?? "0") })));
   } catch (err) {

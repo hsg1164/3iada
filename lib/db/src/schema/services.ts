@@ -1,9 +1,11 @@
 import { pgTable, serial, text, numeric, boolean, integer, timestamp, date } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { clinicsTable } from "./clinics";
 
 export const serviceGroupsTable = pgTable("service_groups", {
   id: serial("id").primaryKey(),
+  clinicId: integer("clinic_id").notNull().default(1).references(() => clinicsTable.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   type: text("type").notNull().default("private"),
   validFrom: date("valid_from"),
@@ -13,7 +15,8 @@ export const serviceGroupsTable = pgTable("service_groups", {
 
 export const servicesTable = pgTable("services", {
   id: serial("id").primaryKey(),
-  groupId: integer("group_id"),
+  clinicId: integer("clinic_id").notNull().default(1).references(() => clinicsTable.id, { onDelete: "cascade" }),
+  groupId: integer("group_id").references(() => serviceGroupsTable.id, { onDelete: "set null" }),
   branch: text("branch").notNull(),
   name: text("name").notNull(),
   isVisible: boolean("is_visible").notNull().default(true),

@@ -1,0 +1,285 @@
+$ vite --config vite.config.ts --host 0.0.0.0
+
+  [32m[1mVITE[22m v7.3.5[39m  [2mready in [0m[1m922[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m20964[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://172.16.0.2:[1m20964[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://192.168.100.78:[1m20964[22m/[39m
+[2m[32m  ➜[39m[22m[2m  press [22m[1mh + enter[22m[2m to show help[22m
+[2m21:18:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:19:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:20:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:21:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:22:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:23:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:24:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:25:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:26:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:27:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:28:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:29:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:30:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:31:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:32:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:33:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:34:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:35:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:36:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:37:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:38:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:39:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:40:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:41:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:42:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:43:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:44:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:45:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:46:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:47:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:48:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:49:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:50:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:51:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:52:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:53:59[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:54:58[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:55:42[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:55:43[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:55:43[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/me[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:55:50[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:55:56[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:56:02[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:56:08[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:56:14[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:56:20[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:56:26[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:56:32[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:56:38[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:56:44[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:56:50[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:56:56[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:57:02[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:57:08[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:57:14[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:57:20[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:57:26[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:57:32[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:57:35[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:57:35[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/me[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:57:42[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:57:48[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:57:54[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:58:00[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:58:06[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:58:12[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:58:18[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:58:24[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+[2m21:58:30[22m [31m[1m[vite][22m[39m [31mhttp proxy error: /api/auth/status[39m
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1193:18)
+    at afterConnectMultiple (node:net:1783:7)
+^C[ELIFECYCLE] Command failed with exit code 3221225786.

@@ -397,7 +397,7 @@ export default function PatientPhotoPage() {
           </button>
           <div className="flex-1 min-w-0">
             <h1 className="text-base font-bold text-white truncate">معرض الصور</h1>
-            <p className="text-[11px] text-blue-300/50">عيادة د. زياد أبو دقة</p>
+            <p className="text-[11px] text-blue-300/50">العيادة</p>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="h-8 px-3 rounded-full flex items-center gap-1.5 text-xs font-medium" style={{

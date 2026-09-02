@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { supabase } from "../lib/supabase";
+import { tenantSupabase } from "../lib/tenant-supabase";
 
 const router = Router();
 
@@ -7,12 +7,12 @@ router.get("/financial/summary", async (req, res) => {
   try {
     const { dateFrom, dateTo } = req.query as Record<string, string>;
 
-    let apptQuery = supabase.from("appointments").select("total_fee, paid_amount, appointment_date");
+    let apptQuery = tenantSupabase(req).from("appointments").select("total_fee, paid_amount, appointment_date");
     if (dateFrom) apptQuery = apptQuery.gte("appointment_date", dateFrom);
     if (dateTo) apptQuery = apptQuery.lte("appointment_date", dateTo);
     const { data: appts } = await apptQuery;
 
-    let payQuery = supabase.from("payments").select("amount, payment_method, appointment_id");
+    let payQuery = tenantSupabase(req).from("payments").select("amount, payment_method, appointment_id");
     const { data: allPayments } = await payQuery;
 
     const apptIds = new Set((appts ?? []).map((a: any) => a.id));
@@ -20,7 +20,7 @@ router.get("/financial/summary", async (req, res) => {
       ? (allPayments ?? []).filter((p: any) => apptIds.has(p.appointment_id))
       : (allPayments ?? []);
 
-    const { data: expenses } = await supabase.from("expenses").select("amount");
+    const { data: expenses } = await tenantSupabase(req).from("expenses").select("amount");
 
     const totalPayments = filteredPayments.reduce((s: number, p: any) => s + parseFloat(p.amount ?? "0"), 0);
     const cashPayments = filteredPayments.filter((p: any) => p.payment_method === "cash").reduce((s: number, p: any) => s + parseFloat(p.amount ?? "0"), 0);
@@ -49,7 +49,7 @@ router.get("/financial/summary", async (req, res) => {
 router.get("/financial/receivables", async (req, res) => {
   try {
     const { dateFrom, dateTo } = req.query as Record<string, string>;
-    let query = supabase.from("appointments").select("id, patient_id, appointment_date, total_fee, paid_amount");
+    let query = tenantSupabase(req).from("appointments").select("id, patient_id, appointment_date, total_fee, paid_amount");
     if (dateFrom) query = query.gte("appointment_date", dateFrom);
     if (dateTo) query = query.lte("appointment_date", dateTo);
     query = query.order("appointment_date", { ascending: false });
@@ -59,7 +59,7 @@ router.get("/financial/receivables", async (req, res) => {
     const withDebt = (rows ?? []).filter((r: any) => parseFloat(r.total_fee ?? "0") - parseFloat(r.paid_amount ?? "0") > 0);
 
     const enriched = await Promise.all(withDebt.map(async (r: any) => {
-      const { data: p } = await supabase.from("patients").select("name_ar, phones").eq("id", r.patient_id).single();
+      const { data: p } = await tenantSupabase(req).from("patients").select("name_ar, phones").eq("id", r.patient_id).single();
       const phones = ((p as any)?.phones ?? []) as Array<{ number: string }>;
       return {
         patientId: r.patient_id,
@@ -79,7 +79,7 @@ router.get("/financial/receivables", async (req, res) => {
 
 router.get("/financial/vaults", async (req, res) => {
   try {
-    const { data, error } = await supabase.from("vaults").select("*").order("id");
+    const { data, error } = await tenantSupabase(req).from("vaults").select("*").order("id");
     if (error) throw error;
     res.json((data ?? []).map((v: any) => ({ ...v, balance: parseFloat(v.balance ?? "0") })));
   } catch (err) {
@@ -91,7 +91,7 @@ router.get("/financial/vaults", async (req, res) => {
 router.get("/financial/vaults/:id/transactions", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { data, error } = await supabase.from("vault_transactions").select("*").eq("vault_id", id).order("created_at", { ascending: false });
+    const { data, error } = await tenantSupabase(req).from("vault_transactions").select("*").eq("vault_id", id).order("created_at", { ascending: false });
     if (error) throw error;
     res.json((data ?? []).map((t: any) => ({ ...t, amount: parseFloat(t.amount ?? "0") })));
   } catch (err) {
@@ -105,7 +105,7 @@ router.post("/financial/vaults/:id/transactions", async (req, res) => {
     const id = parseInt(req.params.id);
     const { type, amount, targetVaultId, note } = req.body;
 
-    const { data: txn, error } = await supabase.from("vault_transactions").insert({
+    const { data: txn, error } = await tenantSupabase(req).from("vault_transactions").insert({
       vault_id: id,
       type,
       amount: amount.toString(),
@@ -114,16 +114,16 @@ router.post("/financial/vaults/:id/transactions", async (req, res) => {
     }).select().single();
     if (error) throw error;
 
-    const { data: vault } = await supabase.from("vaults").select("balance").eq("id", id).single();
+    const { data: vault } = await tenantSupabase(req).from("vaults").select("balance").eq("id", id).single();
     const currentBalance = parseFloat((vault as any)?.balance ?? "0");
     const delta = type === "deposit" || type === "transfer_in" ? amount : -amount;
-    await supabase.from("vaults").update({ balance: (currentBalance + delta).toString() }).eq("id", id);
+    await tenantSupabase(req).from("vaults").update({ balance: (currentBalance + delta).toString() }).eq("id", id);
 
     if (type === "transfer_out" && targetVaultId) {
-      await supabase.from("vault_transactions").insert({ vault_id: targetVaultId, type: "transfer_in", amount: amount.toString(), note });
-      const { data: targetVault } = await supabase.from("vaults").select("balance").eq("id", targetVaultId).single();
+      await tenantSupabase(req).from("vault_transactions").insert({ vault_id: targetVaultId, type: "transfer_in", amount: amount.toString(), note });
+      const { data: targetVault } = await tenantSupabase(req).from("vaults").select("balance").eq("id", targetVaultId).single();
       const targetBalance = parseFloat((targetVault as any)?.balance ?? "0");
-      await supabase.from("vaults").update({ balance: (targetBalance + amount).toString() }).eq("id", targetVaultId);
+      await tenantSupabase(req).from("vaults").update({ balance: (targetBalance + amount).toString() }).eq("id", targetVaultId);
     }
 
     res.status(201).json({ ...txn, amount: parseFloat((txn as any).amount ?? "0") });
@@ -135,7 +135,7 @@ router.post("/financial/vaults/:id/transactions", async (req, res) => {
 
 router.get("/financial/expenses", async (req, res) => {
   try {
-    const { data: rows, error } = await supabase.from("expenses").select("*, expense_categories(name), vaults(name)").order("created_at", { ascending: false });
+    const { data: rows, error } = await tenantSupabase(req).from("expenses").select("*, expense_categories(name), vaults(name)").order("created_at", { ascending: false });
     if (error) throw error;
     res.json((rows ?? []).map((r: any) => ({
       id: r.id,
@@ -158,18 +158,18 @@ router.get("/financial/expenses", async (req, res) => {
 router.post("/financial/expenses", async (req, res) => {
   try {
     const { categoryId, amount, vaultId, performedBy, note, receiptUrl } = req.body;
-    const { data: exp, error } = await supabase.from("expenses").insert({
+    const { data: exp, error } = await tenantSupabase(req).from("expenses").insert({
       category_id: categoryId, amount: amount.toString(), vault_id: vaultId, performed_by: performedBy, note, receipt_url: receiptUrl,
     }).select().single();
     if (error) throw error;
 
-    const { data: vault } = await supabase.from("vaults").select("balance").eq("id", vaultId).single();
+    const { data: vault } = await tenantSupabase(req).from("vaults").select("balance").eq("id", vaultId).single();
     const newBalance = parseFloat((vault as any)?.balance ?? "0") - amount;
-    await supabase.from("vaults").update({ balance: newBalance.toString() }).eq("id", vaultId);
+    await tenantSupabase(req).from("vaults").update({ balance: newBalance.toString() }).eq("id", vaultId);
 
     const [{ data: cat }, { data: v }] = await Promise.all([
-      supabase.from("expense_categories").select("name").eq("id", categoryId).single(),
-      supabase.from("vaults").select("name").eq("id", vaultId).single(),
+      tenantSupabase(req).from("expense_categories").select("name").eq("id", categoryId).single(),
+      tenantSupabase(req).from("vaults").select("name").eq("id", vaultId).single(),
     ]);
     res.status(201).json({ ...exp, amount: parseFloat((exp as any).amount ?? "0"), categoryName: (cat as any)?.name ?? "", vaultName: (v as any)?.name ?? "" });
   } catch (err) {
@@ -180,7 +180,7 @@ router.post("/financial/expenses", async (req, res) => {
 
 router.get("/financial/expense-categories", async (req, res) => {
   try {
-    const { data, error } = await supabase.from("expense_categories").select("*").order("name");
+    const { data, error } = await tenantSupabase(req).from("expense_categories").select("*").order("name");
     if (error) throw error;
     res.json(data ?? []);
   } catch (err) {
@@ -192,7 +192,7 @@ router.get("/financial/expense-categories", async (req, res) => {
 router.post("/financial/expense-categories", async (req, res) => {
   try {
     const { name, description } = req.body;
-    const { data: cat, error } = await supabase.from("expense_categories").insert({ name, description }).select().single();
+    const { data: cat, error } = await tenantSupabase(req).from("expense_categories").insert({ name, description }).select().single();
     if (error) throw error;
     res.status(201).json(cat);
   } catch (err) {
@@ -205,7 +205,7 @@ router.patch("/financial/expense-categories/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const { name, description } = req.body;
-    const { data: cat, error } = await supabase.from("expense_categories").update({ name, description }).eq("id", id).select().single();
+    const { data: cat, error } = await tenantSupabase(req).from("expense_categories").update({ name, description }).eq("id", id).select().single();
     if (error || !cat) return res.status(404).json({ error: "Category not found" });
     res.json(cat);
   } catch (err) {
@@ -217,7 +217,7 @@ router.patch("/financial/expense-categories/:id", async (req, res) => {
 router.delete("/financial/expense-categories/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { error } = await supabase.from("expense_categories").delete().eq("id", id);
+    const { error } = await tenantSupabase(req).from("expense_categories").delete().eq("id", id);
     if (error) throw error;
     res.status(204).end();
   } catch (err) {
@@ -228,7 +228,7 @@ router.delete("/financial/expense-categories/:id", async (req, res) => {
 
 router.get("/financial/routine-expenses", async (req, res) => {
   try {
-    const { data: rows, error } = await supabase.from("routine_expenses").select("*, expense_categories(name)").order("created_at", { ascending: false });
+    const { data: rows, error } = await tenantSupabase(req).from("routine_expenses").select("*, expense_categories(name)").order("created_at", { ascending: false });
     if (error) throw error;
     res.json((rows ?? []).map((r: any) => ({
       id: r.id, categoryId: r.category_id, categoryName: r.expense_categories?.name ?? "",
@@ -244,11 +244,11 @@ router.get("/financial/routine-expenses", async (req, res) => {
 router.post("/financial/routine-expenses", async (req, res) => {
   try {
     const { categoryId, title, amount, frequency, branch, note, isActive } = req.body;
-    const { data: row, error } = await supabase.from("routine_expenses").insert({
+    const { data: row, error } = await tenantSupabase(req).from("routine_expenses").insert({
       category_id: categoryId, title, amount: amount.toString(), frequency, branch, note, is_active: isActive ?? true,
     }).select().single();
     if (error) throw error;
-    const { data: cat } = await supabase.from("expense_categories").select("name").eq("id", categoryId).single();
+    const { data: cat } = await tenantSupabase(req).from("expense_categories").select("name").eq("id", categoryId).single();
     res.status(201).json({ ...row, amount: parseFloat((row as any).amount ?? "0"), categoryName: (cat as any)?.name ?? "" });
   } catch (err) {
     req.log.error({ err }, "create routine expense error");
@@ -268,9 +268,9 @@ router.patch("/financial/routine-expenses/:id", async (req, res) => {
     if (branch !== undefined) updates.branch = branch;
     if (note !== undefined) updates.note = note;
     if (isActive !== undefined) updates.is_active = isActive;
-    const { data: row, error } = await supabase.from("routine_expenses").update(updates).eq("id", id).select().single();
+    const { data: row, error } = await tenantSupabase(req).from("routine_expenses").update(updates).eq("id", id).select().single();
     if (error || !row) return res.status(404).json({ error: "Not found" });
-    const { data: cat } = await supabase.from("expense_categories").select("name").eq("id", (row as any).category_id).single();
+    const { data: cat } = await tenantSupabase(req).from("expense_categories").select("name").eq("id", (row as any).category_id).single();
     res.json({ ...row, amount: parseFloat((row as any).amount ?? "0"), categoryName: (cat as any)?.name ?? "" });
   } catch (err) {
     req.log.error({ err }, "update routine expense error");
@@ -281,7 +281,7 @@ router.patch("/financial/routine-expenses/:id", async (req, res) => {
 router.delete("/financial/routine-expenses/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { error } = await supabase.from("routine_expenses").delete().eq("id", id);
+    const { error } = await tenantSupabase(req).from("routine_expenses").delete().eq("id", id);
     if (error) throw error;
     res.status(204).end();
   } catch (err) {

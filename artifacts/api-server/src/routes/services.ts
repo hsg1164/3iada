@@ -1,18 +1,18 @@
 import { Router } from "express";
-import { supabase } from "../lib/supabase";
+import { tenantSupabase } from "../lib/tenant-supabase";
 
 const router = Router();
 
 router.get("/services", async (req, res) => {
   try {
     const { branch, groupId } = req.query as Record<string, string>;
-    let query = supabase.from("services").select("*").order("name");
+    let query = tenantSupabase(req).from("services").select("*").order("name");
     if (branch) query = query.eq("branch", branch);
     if (groupId) query = query.eq("group_id", parseInt(groupId));
     const { data: rows, error } = await query;
     if (error) throw error;
 
-    const { data: groups } = await supabase.from("service_groups").select("id, name");
+    const { data: groups } = await tenantSupabase(req).from("service_groups").select("id, name");
     const groupMap = Object.fromEntries((groups ?? []).map((g: any) => [g.id, g.name]));
 
     res.json((rows ?? []).map((s: any) => ({
@@ -30,7 +30,7 @@ router.get("/services", async (req, res) => {
 router.post("/services", async (req, res) => {
   try {
     const data = req.body;
-    const { data: svc, error } = await supabase.from("services").insert({
+    const { data: svc, error } = await tenantSupabase(req).from("services").insert({
       group_id: data.groupId ?? null,
       branch: data.branch,
       name: data.name,
@@ -63,7 +63,7 @@ router.patch("/services/:id", async (req, res) => {
     if (data.patientFee !== undefined) updates.patient_fee = data.patientFee.toString();
     if (data.durationMinutes !== undefined) updates.duration_minutes = data.durationMinutes;
     if (data.groupId !== undefined) updates.group_id = data.groupId;
-    const { data: updated, error } = await supabase.from("services").update(updates).eq("id", id).select().single();
+    const { data: updated, error } = await tenantSupabase(req).from("services").update(updates).eq("id", id).select().single();
     if (error) throw error;
     res.json({ ...updated, price: parseFloat((updated as any).price ?? "0"), patientFee: parseFloat((updated as any).patient_fee ?? "0") });
   } catch (err) {
@@ -75,7 +75,7 @@ router.patch("/services/:id", async (req, res) => {
 router.delete("/services/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { error } = await supabase.from("services").delete().eq("id", id);
+    const { error } = await tenantSupabase(req).from("services").delete().eq("id", id);
     if (error) throw error;
     res.json({ success: true, message: "Service deleted" });
   } catch (err) {
@@ -86,7 +86,7 @@ router.delete("/services/:id", async (req, res) => {
 
 router.get("/service-groups", async (req, res) => {
   try {
-    const { data: rows, error } = await supabase.from("service_groups").select("*").order("name");
+    const { data: rows, error } = await tenantSupabase(req).from("service_groups").select("*").order("name");
     if (error) throw error;
     res.json(rows ?? []);
   } catch (err) {
@@ -98,7 +98,7 @@ router.get("/service-groups", async (req, res) => {
 router.post("/service-groups", async (req, res) => {
   try {
     const { name, type, validFrom, validTo } = req.body;
-    const { data: group, error } = await supabase.from("service_groups").insert({
+    const { data: group, error } = await tenantSupabase(req).from("service_groups").insert({
       name, type: type ?? "private", valid_from: validFrom, valid_to: validTo,
     }).select().single();
     if (error) throw error;

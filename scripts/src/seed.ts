@@ -46,7 +46,7 @@ async function seed() {
 
   // System users
   await db.insert(systemUsersTable).values([
-    { name: "د. زياد أبو دقة", username: "dr.ziyad", passwordHash: "hashed_password", email: "dr.ziyad@clinic.ps", roleId: adminRoleId, branch: "غزة", isFrozen: false },
+    { name: "الطبيب", username: "dr.ziyad", passwordHash: "hashed_password", email: "dr.ziyad@clinic.ps", roleId: adminRoleId, branch: "غزة", isFrozen: false },
     { name: "أحمد العمري", username: "ahmed", passwordHash: "hashed_password", email: "ahmed@clinic.ps", roleId: adminRoleId, branch: "غزة", isFrozen: false },
   ]).onConflictDoNothing();
   console.log("✓ Users seeded");
@@ -177,9 +177,9 @@ async function seed() {
   const vaultList = await db.select().from(vaultsTable);
   if (vaultList.length > 0) {
     await db.insert(vaultTransactionsTable).values([
-      { vaultId: vaultList[0].id, type: "deposit", amount: "5000", note: "إيداع مدفوعات المرضى", performedBy: "د. زياد" },
+      { vaultId: vaultList[0].id, type: "deposit", amount: "5000", note: "إيداع مدفوعات المرضى", performedBy: "الطبيب" },
       { vaultId: vaultList[0].id, type: "withdraw", amount: "1500", note: "مصروفات متنوعة", performedBy: "أحمد" },
-      { vaultId: vaultList[1].id, type: "deposit", amount: "2000", note: "تحويل للمصروفات", performedBy: "د. زياد" },
+      { vaultId: vaultList[1].id, type: "deposit", amount: "2000", note: "تحويل للمصروفات", performedBy: "الطبيب" },
     ]).onConflictDoNothing();
   }
   console.log("✓ Vault transactions seeded");
